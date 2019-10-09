@@ -135,9 +135,6 @@ class LSLBUFFER():
             # block until we actually have data
             samples, timestamps = self.lsl_inlet.pull_chunk(timeout=pylsl.FOREVER, max_samples=self.max_samples)
             samples = np.array(samples).reshape(-1, self.n_channels)
-            
-            t0 = timestamps[0] + tc_s
-            m_timestamps = [(i + tc_m - t0) * 1000 for i in m_timestamps]
 
             return samples
             
