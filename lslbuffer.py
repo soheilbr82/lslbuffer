@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 logger.info('Logger started.')
 
 
-#class LSL():
 class LSLBUFFER():
     """lab streaming layer (lsl) with varied buffer size and time-corrected samples.
     By running this code you can connect to a running EEG device that is

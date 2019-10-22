@@ -26,8 +26,33 @@ lslobj.start()
 while True:
 	data, marker = lslobj.get_data()
     # do something with data and/or break the loop
-    lslobj.stop()
+lslobj.stop()
 ```
+
+
+
+
+# lslringbuffer
+
+The class provides a variable size ringbuffer of EEG received stream through labstreaminglayer (lsl)
+
+```python
+import lslringbuffer_multithreaded as lbm
+from queue import Queue
+from threading import Thread
+import time
+
+eeg_sig = Queue()
+lslringbuffer = lbm.LSLRINGBUFFER(lsl_type='EEG', fs=250, buffer_duration=4.0, num_channels=33)
+t1 = Thread(target=lslringbuffer.run, args=(eeg_sig,))
+t1.start()
+time.sleep(5)
+
+while True:
+	data = eeg_sig.get()
+```
+
+
 
 
 # viz

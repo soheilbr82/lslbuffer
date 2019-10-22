@@ -3,3 +3,4 @@ numpy
 scipy
 PyQt5
 pyqtgraph
+numpy_ringbuffer
