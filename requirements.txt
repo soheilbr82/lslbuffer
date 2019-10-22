@@ -1,0 +1,5 @@
+pylsl
+numpy
+scipy
+PyQt5
+pyqtgraph
