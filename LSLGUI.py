@@ -1,0 +1,216 @@
+#import lslbuffer as lb
+import pyqtgraph as pg
+from pyqtgraph.Qt import QtCore, QtGui
+import pyqtgraph.console
+import lslbuffer as lb
+
+import PyQt5
+from PyQt5 import uic
+from PyQt5.QtWidgets import QApplication
+
+import numpy as np
+import pylsl
+from pyqtgraph.dockarea import *
+from viz import rt_timeseries
+from PlotStream import PlotStream
+from test import runSignal
+import sys
+
+
+import lslringbuffer_multithreaded as lbm
+from queue import Queue
+from threading import Thread
+import time
+import socket
+
+class LSLgui():
+    def __init__(self):
+        self.Form, self.Window = uic.loadUiType("LSL_visualization.ui")
+        self.lslobj = dict()
+        self.availStrms = dict()
+        self.channels = []
+        self.showChnls=[]
+        self.available = False
+        self.current_stream_name = None
+        self.streamView = False
+        self.graph = None
+        
+        for index, stream in enumerate(['EEG', 'Markers']):
+            print("Getting all available {} LSL streams".format(stream))
+            streams = pylsl.resolve_byprop('type', stream, timeout=2) 
+            if len(streams) == 0:
+                print("No {} streams available.".format(stream))
+            else:       
+                self.available = True    
+                print("Got all {} streams. Starting streams now.....".format(stream))          
+            for s in streams:
+                lsl = lb.LSLInlet(s, name=stream)
+                self.lslobj[lsl.stream_name] = lsl
+            print()
+        """
+        for index, stream in enumerate(['EEG', 'Markers']):
+            self.eeg_sig = Queue()
+            lslringbuffer = lbm.LSLRINGBUFFER(lsl_type=stream, fs=250, buffer_duration=4.0, num_channels=32)
+            t1 = Thread(target=lslringbuffer.run, args=(self.eeg_sig,))
+            t1.start()
+            time.sleep(5)
+            self.lslobj[stream] = lslringbuffer"""
+
+        self.start()
+
+    def start(self):
+        self.build()
+        sys.exit(self.app.exec_())
+
+
+    def loadChannels(self):
+        print("Load channels for {}".format(self.getStreamName()))
+        #for index, stream in enumerate(self.availStrms.keys()):
+        #   if self.availStrms[stream].isChecked():
+        print(self.lslobj[self.current_stream_name].get_channels())
+
+        for index, channel in enumerate(self.lslobj[self.current_stream_name].get_channels()):
+            print(channel)
+            self.channels.append(PyQt5.QtWidgets.QCheckBox("%s" % channel))
+            self.view.addWidget(self.channels[index])
+
+        self.availStrms[self.current_stream_name].clicked.connect(self.clearChannels)
+        self.queryButton.clicked.connect(self.loadAvailableStreams)
+                
+    def clearChannels(self):
+        self.resetStreamName()
+        for i in reversed(range(self.view.count())):
+            if self.view.itemAt(i).widget().isChecked():
+                self.view.itemAt(i).widget().toggle()    
+
+            self.view.itemAt(i).widget().setParent(None)
+            
+        self.streamClicked()
+        
+
+    def streamClicked(self):
+        for index, stream in enumerate(self.availStrms.keys()):
+            if not self.availStrms[stream].isChecked():
+                self.availStrms[stream].clicked.connect(self.loadChannels)
+        
+
+    def loadAvailableStreams(self):
+        self.query.clear()
+
+        if self.available != False:
+            if len(self.lslobj.keys()) == 0:
+                item = PyQt5.QtWidgets.QTreeWidgetItem(["No available streams of the given criteria!"])
+            else:
+                for index, stream in enumerate(self.lslobj.keys()):
+                    self.info = self.lslobj[stream].inlet.info()
+                    size = PyQt5.QtCore.QSize(100,50)
+                    item = PyQt5.QtWidgets.QTreeWidgetItem(["Name: %s - Type: %s" % (stream, self.lslobj[stream].stream_type)])
+                    chnlButton = PyQt5.QtWidgets.QRadioButton("View %s?" % stream)
+
+                    self.query.addTopLevelItem(item)
+                    i1 = PyQt5.QtWidgets.QTreeWidgetItem(["Channel_Count: %d" % self.info.channel_count()])
+                    i2 = PyQt5.QtWidgets.QTreeWidgetItem(["Nominal_srate: %d" % self.info.nominal_srate()])
+                    i3 = PyQt5.QtWidgets.QTreeWidgetItem(["Channel_format: %s" % self.info.channel_format()])
+                    i4 = PyQt5.QtWidgets.QTreeWidgetItem(["uid: %s" % self.info.uid()])
+                    i5 = PyQt5.QtWidgets.QTreeWidgetItem(["Hostname: %s" % self.info.hostname()])
+
+                    item.addChild(i1)
+                    item.addChild(i2)
+                    item.addChild(i3)
+                    item.addChild(i4)
+                    item.addChild(i5)
+
+                    self.availStrms[stream] = chnlButton
+                    self.query.setItemWidget(item, 1, chnlButton)
+                
+                self.streamClicked()
+        else:
+            item = PyQt5.QtWidgets.QTreeWidgetItem([" No available streams that meet the given criteria!\n Please make sure that streams are running."])
+            self.query.addTopLevelItem(item)
+
+
+    def getStreamName(self):
+        for index, stream in enumerate(self.availStrms.keys()):
+            if self.availStrms[stream].isChecked():
+                self.current_stream_name = stream
+                return stream
+    
+    def resetStreamName(self):
+        self.current_stream_name = None
+
+
+    def showStream(self):
+        print("Clicked")
+        self.showChnls.clear()
+        if self.graph != None:
+            if self.graph.w.isActive():
+                print("Active")
+                del self.graph
+                self.graph = None
+            elif self.graph.w.isVisible():
+                print("Visible")
+                del self.graph
+                self.graph = None
+        
+        for index, channel in enumerate(self.channels):
+            if channel.isChecked():
+                print("Channel %d" % index)
+                self.showChnls.append(index)
+
+        self.info = self.lslobj[self.getStreamName()].inlet.info()
+        self.graph = runSignal(self.info.nominal_srate(), self.lslobj[self.getStreamName()].get_channels(), self.showChnls, self.lslobj[self.current_stream_name])
+        self.graph.run(self.signalViewer)
+        self.visualButton.clicked.connect(self.showStream)
+
+    def startStream(self):
+        self.graph.start()
+
+    def stopStream(self):
+        self.graph.stop()
+
+    def build(self):
+        self.app = QApplication([])
+        self.window = self.Window()
+        self.window.setWindowTitle('PyQt5 graph example: LSL GUI')
+        self.form = self.Form()
+        self.form.setupUi(self.window)
+
+
+        self.queryButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'queryButton')
+        self.visualButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'visualizeButton')
+        self.availableStreams = self.window.findChild(PyQt5.QtWidgets.QComboBox, 'availableStreams')
+        self.StreamName = self.window.findChild(PyQt5.QtWidgets.QLineEdit, 'StreamName')
+        self.signalViewer = self.window.findChild(PyQt5.QtWidgets.QGridLayout, 'signalViewer')
+        self.signalData = self.window.findChild(PyQt5.QtWidgets.QVBoxLayout, 'signalMetaData')
+        self.stopButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'stopStream')
+        self.startButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'startStream')
+
+
+        
+        self.utkLogo = self.window.findChild(PyQt5.QtWidgets.QLabel, 'UTKlogo')
+        self.utkLogo.setAlignment(PyQt5.QtCore.Qt.AlignCenter)
+        self.image = PyQt5.QtGui.QPixmap("/Users/jdunkley98/Downloads/MABE-Research/lslbuffer/viz/UTKlogo.png")
+        self.utkLogo.setPixmap(self.image)
+
+        self.label = self.window.findChild(PyQt5.QtWidgets.QLabel, 'NBL')
+        self.label.setAlignment(PyQt5.QtCore.Qt.AlignCenter)
+
+        self.channelView = self.window.findChild(PyQt5.QtWidgets.QScrollArea, 'channelView')
+        self.channelWidget = PyQt5.QtWidgets.QWidget()
+        self.view = PyQt5.QtWidgets.QVBoxLayout()
+        self.channelWidget.setLayout(self.view)
+        self.channelView.setWidget(self.channelWidget)
+
+
+        self.query = self.window.findChild(PyQt5.QtWidgets.QTreeWidget, 'streamMetaData')
+        self.query.setColumnCount(2)
+        self.query.header().setSectionResizeMode(1)
+
+
+        self.queryButton.clicked.connect(self.loadAvailableStreams)
+        self.visualButton.clicked.connect(self.showStream)
+        self.stopButton.clicked.connect(self.stopStream)
+        self.startButton.clicked.connect(self.startStream)
+
+
+        self.window.show()
