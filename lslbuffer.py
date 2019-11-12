@@ -187,12 +187,14 @@ class LSLInlet:
         self.inlet = None
         self.dtype = 'float64'
         self.stream_name = pylsl.StreamInfo.name(stream)
+        #self.fs = pylsl.StreamInfo.nominal_srate(stream)
 
         print("Trying to connect to {} LSL stream.....".format(self.stream_name))
 
         try:
             #if len(streams) > 0:
-            self.inlet = pylsl.StreamInlet(stream)
+            self.inlet = pylsl.StreamInlet(stream, max_buflen=4)
+
             #def start(self):
             """Open the lsl inlets.
             """

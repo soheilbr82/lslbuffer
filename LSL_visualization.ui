@@ -167,6 +167,38 @@
      <string>Start Streaming</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="quitButton">
+    <property name="geometry">
+     <rect>
+      <x>1000</x>
+      <y>1</y>
+      <width>141</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Quit</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="verticalLayoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>150</x>
+      <y>640</y>
+      <width>831</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="streamData">
+     <item>
+      <widget class="QLabel" name="streamLabel">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -178,6 +210,9 @@
     </rect>
    </property>
    <widget class="QMenu" name="LSL_Visualization">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
     <property name="title">
      <string>LSL Visualization</string>
     </property>
@@ -187,5 +222,22 @@
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>lslVisual</sender>
+   <signal>destroyed()</signal>
+   <receiver>lslVisual</receiver>
+   <slot>deleteLater()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>570</x>
+     <y>409</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>570</x>
+     <y>409</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

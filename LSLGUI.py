@@ -13,15 +13,9 @@ import pylsl
 from pyqtgraph.dockarea import *
 from viz import rt_timeseries
 from PlotStream import PlotStream
-from test import runSignal
+from SignalViewer import runSignal
 import sys
 
-
-import lslringbuffer_multithreaded as lbm
-from queue import Queue
-from threading import Thread
-import time
-import socket
 
 class LSLgui():
     def __init__(self):
@@ -35,26 +29,25 @@ class LSLgui():
         self.streamView = False
         self.graph = None
         
-        for index, stream in enumerate(['EEG', 'Markers']):
-            print("Getting all available {} LSL streams".format(stream))
-            streams = pylsl.resolve_byprop('type', stream, timeout=2) 
-            if len(streams) == 0:
-                print("No {} streams available.".format(stream))
-            else:       
-                self.available = True    
-                print("Got all {} streams. Starting streams now.....".format(stream))          
-            for s in streams:
-                lsl = lb.LSLInlet(s, name=stream)
-                self.lslobj[lsl.stream_name] = lsl
+        #for index, stream in enumerate(['EEG', 'Markers']):
+        #print("Getting all available {} LSL streams".format(stream))
+        streams = pylsl.resolve_streams(wait_time=1.0)#pylsl.resolve_byprop('type', stream, timeout=2) 
+        if len(streams) == 0:
+            print("No streams available.")
+            #print("No {} streams available.".format(stream))
+
+        else:       
+            self.available = True    
+            print("Got all available streams. Starting streams now.....") 
+            #print("Got all {} streams. Starting streams now.....".format(stream))          
+
+        for s in streams:
+            lsl = lb.LSLInlet(s, name=s.name())
+            self.lslobj[lsl.stream_name] = lsl
             print()
-        """
-        for index, stream in enumerate(['EEG', 'Markers']):
-            self.eeg_sig = Queue()
-            lslringbuffer = lbm.LSLRINGBUFFER(lsl_type=stream, fs=250, buffer_duration=4.0, num_channels=32)
-            t1 = Thread(target=lslringbuffer.run, args=(self.eeg_sig,))
-            t1.start()
-            time.sleep(5)
-            self.lslobj[stream] = lslringbuffer"""
+            #lsl = lb.LSLInlet(s, name=s)
+            #self.lslobj[lsl.stream_name] = lsl
+            #print()
 
         self.start()
 
@@ -64,13 +57,13 @@ class LSLgui():
 
 
     def loadChannels(self):
-        print("Load channels for {}".format(self.getStreamName()))
-        #for index, stream in enumerate(self.availStrms.keys()):
-        #   if self.availStrms[stream].isChecked():
-        print(self.lslobj[self.current_stream_name].get_channels())
+        self.getStreamName()
+        print("Load channels for {}".format(self.current_stream_name))
+        self.graph = None
+
+        self.view.addWidget(PyQt5.QtWidgets.QCheckBox("View All Channels"))
 
         for index, channel in enumerate(self.lslobj[self.current_stream_name].get_channels()):
-            print(channel)
             self.channels.append(PyQt5.QtWidgets.QCheckBox("%s" % channel))
             self.view.addWidget(self.channels[index])
 
@@ -133,40 +126,56 @@ class LSLgui():
         for index, stream in enumerate(self.availStrms.keys()):
             if self.availStrms[stream].isChecked():
                 self.current_stream_name = stream
-                return stream
+                break
     
     def resetStreamName(self):
         self.current_stream_name = None
 
 
     def showStream(self):
-        print("Clicked")
-        self.showChnls.clear()
+        self.showChnls=[]
+
+        if self.view.itemAt(0).widget().isChecked():
+            self.showChnls = range(len(self.channels))
+            print(self.showChnls)
+        else:
+            for index, channel in enumerate(self.channels):
+                if channel.isChecked():
+                    self.showChnls.append(index)
+            print(self.showChnls)
+
         if self.graph != None:
             if self.graph.w.isActive():
                 print("Active")
-                del self.graph
-                self.graph = None
-            elif self.graph.w.isVisible():
-                print("Visible")
-                del self.graph
-                self.graph = None
+                self.graph.stop()
+                self.graph.resetViewer(self.info.nominal_srate(), self.lslobj[self.current_stream_name].get_channels(), \
+                                    self.showChnls, self.lslobj[self.current_stream_name])
+                self.graph.setTimer()
         
-        for index, channel in enumerate(self.channels):
-            if channel.isChecked():
-                print("Channel %d" % index)
-                self.showChnls.append(index)
-
-        self.info = self.lslobj[self.getStreamName()].inlet.info()
-        self.graph = runSignal(self.info.nominal_srate(), self.lslobj[self.getStreamName()].get_channels(), self.showChnls, self.lslobj[self.current_stream_name])
-        self.graph.run(self.signalViewer)
-        self.visualButton.clicked.connect(self.showStream)
+        else:  
+            self.getStreamName()
+            self.info = self.lslobj[self.current_stream_name].inlet.info()
+            self.graph = runSignal(self.info.nominal_srate(), self.lslobj[self.current_stream_name].get_channels(), \
+                                self.showChnls, self.lslobj[self.current_stream_name], self.streamLabel)
+            self.graph.setViewer(self.signalViewer)
+            self.graph.createTimer()
+            self.graph.setTimer()
+            self.visualButton.clicked.connect(self.showStream)
 
     def startStream(self):
-        self.graph.start()
+        if self.graph != None:
+            self.graph.start()
 
     def stopStream(self):
-        self.graph.stop()
+        if self.graph != None:
+            self.graph.stop()
+
+    def quitApp(self):
+        for key in self.lslobj.keys():
+            self.lslobj[key].disconnect()
+            self.lslobj[key] = None
+
+        self.app.quit()
 
     def build(self):
         self.app = QApplication([])
@@ -184,7 +193,12 @@ class LSLgui():
         self.signalData = self.window.findChild(PyQt5.QtWidgets.QVBoxLayout, 'signalMetaData')
         self.stopButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'stopStream')
         self.startButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'startStream')
+        self.quitButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'quitButton')
 
+        self.streamData = self.window.findChild(PyQt5.QtWidgets.QVBoxLayout, 'streamData')
+        self.streamLabel = self.window.findChild(PyQt5.QtWidgets.QLabel, 'streamLabel')
+        self.streamLabel.setAlignment(PyQt5.QtCore.Qt.AlignCenter)
+        self.streamData.addWidget(self.streamLabel)
 
         
         self.utkLogo = self.window.findChild(PyQt5.QtWidgets.QLabel, 'UTKlogo')
@@ -211,6 +225,8 @@ class LSLgui():
         self.visualButton.clicked.connect(self.showStream)
         self.stopButton.clicked.connect(self.stopStream)
         self.startButton.clicked.connect(self.startStream)
+        self.quitButton.clicked.connect(self.quitApp)
+
 
 
         self.window.show()
