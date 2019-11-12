@@ -20,25 +20,26 @@ class DummyLSL:
     STREAMING = 2
     STOPPING = 3
 
-    def __init__(self):
+    def __init__(self, name, idNum):
         print("\n-------INSTANTIATING DUMMY BOARD-------")
-        self.n_channels = 4
+        self.n_channels = 32
         self.sample_freq = 250
-
+        self.name = name
+        self.id = idNum
         self.state = self.IDLE
 
-        self.stream_info = StreamInfo("DummyStream", "EEG", self.n_channels, self.sample_freq, 'float32',
-                                      "dummy_eeg_id1")
+        self.stream_info = StreamInfo(self.name, "EEG", self.n_channels, self.sample_freq, 'float32',
+                                      "dummy_eeg_id%s" % str(self.id))
         self.outlet = StreamOutlet(self.stream_info)
 
     def create_lsl(self):
         info_args = dict(
-            name="DummyStream",
+            name=self.name,
             type="EEG",
             channel_count=self.n_channels,
             nominal_srate=self.sample_freq,
             channel_format="float32",
-            source_id="dummy_eeg_id1"
+            source_id="dummy_eeg_id%s" % self.id
         )
 
         self.stream_info = StreamInfo(**info_args)
@@ -68,7 +69,7 @@ class DummyLSL:
 
         print("--------------------------------------\n" +
               "LSL Configuration: \n" +
-              "  Stream 1: \n" +
+              "  Stream %s: \n" % str(self.id)+
               "      Name: " + info_args["name"] + " \n" +
               "      Type: " + info_args["type"] + " \n" +
               "      Channel Count: " + str(self.n_channels) + "\n" +
