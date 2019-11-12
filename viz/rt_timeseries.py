@@ -1,10 +1,10 @@
 import numpy as np
 import pylsl
-import sys
+#import sys
 #from PyQt4 import QtCore, QtGui #in the pyqt4 tutorials
-from PyQt5 import QtCore, QtGui, QtWidgets #works for pyqt5
-import os
 import pyqtgraph as pg
+from pyqtgraph.Qt import QtCore, QtGui
+import os
 
 
 class Grapher():
@@ -24,6 +24,7 @@ class Grapher():
 
         self.stream = stream
         self.inlet = pylsl.StreamInlet(stream)
+        self.window = None
 
         self.buffer_size = buffer_size
         self.channel_count = self.inlet.channel_count
@@ -42,7 +43,6 @@ class Grapher():
             pg.setConfigOption('background', 'w')
             pg.setConfigOption('foreground', 'k')
         self.fill_buffer()
-        self.start_graph()
 
     def fill_buffer(self):
         """ Fill buffer before starting the grapher. """
@@ -92,38 +92,52 @@ class Grapher():
 
         # update graph handles
         if self.gbuffer.any():
-            for k in range(0, self.channel_count):
+            for k in range(len(self.channels)):
                 self.handles[k].setData(self.gtimes,
                                         self.gbuffer[k::self.channel_count])
 
-    def start_graph(self):
+    def start(self):
+        if not hasattr(QtCore, 'PYQT_VERSION') or (sys.flags.interactive != 1):
+            self.window = QtGui.QMainWindow()
+            os._exit(0)
+            
+    
+    def start_graph(self, channels,layout):
         """ Starts graphing. """
         # setup plot title and initialize plots+handles
+        self.channels = channels
         title_str = "%s(%s)" % (self.stream.name(), self.stream.type())
-        self.win = pg.GraphicsWindow(title=title_str)
+        #self.win = pg.GraphicsWindow(title=title_str)
+        
         self.plots = []
         self.handles = []
 
-        # add each channel as a (vertical) subplot
-        for k in range(0, self.channel_count):
-            if self.chnames:
-                self.plots.append(self.win.addPlot(title=self.chnames[k]))
-            else:
-                self.plots.append(self.win.addPlot(title="ch" + str(k)))
 
-            self.handles.append(self.plots[k].plot(pen=self.col))
-            if k < self.channel_count-1:
-                self.plots[k].showAxis('bottom', show=False)
-                self.win.nextRow()
+        # add each channel as a (vertical) subplot
+        for index, k in enumerate(channels):#range(0, self.channel_count):
+            if self.chnames:
+                self.plots.append(pg.PlotWidget(name=self.chnames[k]))#self.win.addPlot(title=self.chnames[k]))
+            else:
+                self.plots.append(pg.PlotWidget(name="ch" + str(k)))#self.win.addPlot(title="ch" + str(k)))
+
+            layout.addWidget(self.plots[index])
+
+            self.handles.append(self.plots[index].plot(pen=self.col))
+            if index < self.channel_count-1:
+                self.plots[index].showAxis('bottom', show=False)
+                #self.win.nextRow()
 
         # its go time
-        self.timer = pg.QtCore.QTimer()
-        self.timer.timeout.connect(self.update)
-        self.timer.start(15)  # heuristically derived sleepytime
+        timer = QtCore.QTimer()
+        timer.timeout.connect(self.update)
+        timer.start(30)  # heuristically derived sleepytime
+        timer.setInterval(10)
 
         # this stuff is for insuring a clean exit
-        QtGui.QApplication.instance().exec_()
-        os._exit(0)
+        #self.start()
+
+        def __del__(self):
+            print('Destructor called, stream visual deleted.')
 
 
 class XYGrapher():
@@ -188,13 +202,16 @@ class XYGrapher():
         self.handle = self.xyplot.plot(pen=self.col)
 
         # its go time
-        self.timer = pg.QtCore.QTimer()
-        self.timer.timeout.connect(self.update)
-        self.timer.start(15)  # heuristically derived sleepytime
+        timer = pg.QtCore.QTimer()
+        timer.timeout.connect(self.update)
+        timer.start(30) # heuristically derived sleepytime
+        timer.setInterval(10)  
 
         # this stuff is for insuring a clean exit (also kills everything, sorry)
         QtGui.QApplication.instance().exec_()
         os._exit(0)
+
+
 
 if __name__ == "__main__":
 

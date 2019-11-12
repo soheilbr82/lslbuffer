@@ -15,7 +15,7 @@ from numpy_ringbuffer import RingBuffer
 
 
 class LSLRINGBUFFER:
-    def __init__(self, lsl_type='EEG', fs=250, buffer_duration=3.0, num_channels=4):
+    def __init__(self, lsl_type='EEG', fs=250, buffer_duration=4.0, num_channels=32):
   #      self.queue = queue
         self.lsl_type = lsl_type # Type of LSL that has to be parsed into the ring buffer
         self.fs = fs # Sampling rate of LSL
