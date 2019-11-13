@@ -18,7 +18,7 @@ import sys
 
 class LSLgui():
     def __init__(self):
-        self.Form, self.Window = uic.loadUiType("LSLvisualization.ui")
+        self.Form, self.Window = uic.loadUiType("LSL_visualization.ui")
         self.lslobj = dict()
         self.availStrms = dict()
         self.channels = []
