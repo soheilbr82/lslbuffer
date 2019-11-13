@@ -1,5 +1,5 @@
 import lslbuffer as lb
-from LSLGUI import LSLgui
+from LSL_visualization import LSLgui
 from viz import rt_timeseries
 import sys
 
