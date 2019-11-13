@@ -64,3 +64,22 @@ from viz import rt_timeseries
 streams = rt_timeseries.pylsl.resolve_byprop('name','DummyStream')
 eeg_graph = rt_timeseries.Grapher(streams[0],250*10,'k',invert=True)
 ```
+
+
+
+
+# VersaStream
+
+The code that runs the main LSL GUI application
+
+First, start streaming data. If no hardware is available, open another terminal window and generate the dummy stream by typing "python -m start_stream --dummy" in the command line. Switch back to the original window and run the program.
+
+```python
+import lslbuffer as lb
+from LSLvisualization import LSLgui
+from viz import rt_timeseries
+import sys
+
+if __name__ == '__main__':
+    app = LSLgui()
+```
