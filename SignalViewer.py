@@ -204,6 +204,7 @@ class runSignal:
         self.chunk_len = 8
         self.lsl = lsl
         self.chunk = None
+        self.length_of_chunk = 0
         self.a = QtWidgets.QApplication([])
         self.label1 = label1
         
@@ -258,15 +259,28 @@ class runSignal:
             print("timer is inactive")
     
     def updateData(self):
-        self.label1.setText(" Stream: %s\t\t Sampling rate: %d\t\t Time: %.2f\t\t Chunk size: %d" %(self.lsl.stream_name, self.lsl.get_frequency(), self.timer.elapsed()/1000, len(self.chunk)))
-        print(self.lsl.inlet.obj)
+  
+        #Update display based on seconds, minutes, or hours ran
+        if (self.timer.elapsed()/1000) < 60: #If less than a minute has gone by
+            self.label1.setText(" Stream: %s\t\t Sampling rate: %d\t\t Time: %.2fs\t\t Chunk size: %d" \
+                %(self.lsl.stream_name, self.lsl.get_frequency(), self.timer.elapsed()/1000, len(self.chunk)))
+        elif (self.timer.elapsed()/1000) < 3600:#If less than an hour has gone by
+            self.label1.setText(" Stream: %s\t\t Sampling rate: %d\t\t Time: %dm %.2fs\t\t Chunk size: %d" \
+                %(self.lsl.stream_name, self.lsl.get_frequency(), int((self.timer.elapsed()/1000)/60), \
+                    (self.timer.elapsed()/1000)%60, len(self.chunk)))
+        else:
+            self.label1.setText(" Stream: %s\t\t Sampling rate: %d\t\t Time: %dh %dm %.2fs\t\t Chunk size: %d" \
+                %(self.lsl.stream_name, self.lsl.get_frequency(), int(self.timer.elapsed()/3600), \
+                    int((self.timer.elapsed()/1000)/60)%60 , (self.timer.elapsed()/1000)%60, len(self.chunk)))
+
 
     def update(self):
         self.time
         self.time += self.chunk_len
         self.chunk, timestamp = self.lsl.get_next_chunk()
-        self.w.update(self.chunk)
-        self.updateData()
+        if self.chunk is not None: #Update signal and signal data if pulled chunk is not None
+            self.w.update(self.chunk)
+            self.updateData()
   
 
 if __name__ == '__main__':

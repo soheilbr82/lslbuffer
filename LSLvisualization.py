@@ -12,7 +12,6 @@ import numpy as np
 import pylsl
 from pyqtgraph.dockarea import *
 from viz import rt_timeseries
-from PlotStream import PlotStream
 from SignalViewer import runSignal
 import sys
 
@@ -171,6 +170,8 @@ class LSLgui():
             self.graph.stop()
 
     def quitApp(self):
+        if self.graph != None:
+            self.graph.main_timer.stop()
         for key in self.lslobj.keys():
             self.lslobj[key].disconnect()
             self.lslobj[key] = None
