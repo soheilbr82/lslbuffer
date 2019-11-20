@@ -130,6 +130,12 @@ class LSLgui():
     def resetStreamName(self):
         self.current_stream_name = None
 
+    def loadFilters(self):
+        self.filterOptions.addWidget(PyQt5.QtWidgets.QRadioButton("No Filter"))
+        self.filterOptions.itemAt(0).widget().click()
+
+        self.filterOptions.addWidget(PyQt5.QtWidgets.QRadioButton("Notch Filter"))
+        self.filterOptions.addWidget(PyQt5.QtWidgets.QRadioButton("Butter Filter"))
 
     def showStream(self):
         self.showChnls=[]
@@ -153,10 +159,11 @@ class LSLgui():
         
         else:  
             self.getStreamName()
+            self.loadFilters()
             self.info = self.lslobj[self.current_stream_name].inlet.info()
             self.graph = runSignal(self.info.nominal_srate(), self.lslobj[self.current_stream_name].get_channels(), \
                                 self.showChnls, self.lslobj[self.current_stream_name], self.streamLabel)
-            self.graph.setViewer(self.signalViewer)
+            self.graph.setViewer(self.signalViewer, self.filterOptions)
             self.graph.createTimer()
             self.graph.setTimer()
             self.visualButton.clicked.connect(self.showStream)
@@ -190,11 +197,14 @@ class LSLgui():
         self.visualButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'visualizeButton')
         self.availableStreams = self.window.findChild(PyQt5.QtWidgets.QComboBox, 'availableStreams')
         self.StreamName = self.window.findChild(PyQt5.QtWidgets.QLineEdit, 'StreamName')
+
         self.signalViewer = self.window.findChild(PyQt5.QtWidgets.QGridLayout, 'signalViewer')
         self.signalData = self.window.findChild(PyQt5.QtWidgets.QVBoxLayout, 'signalMetaData')
         self.stopButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'stopStream')
         self.startButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'startStream')
         self.quitButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'quitButton')
+        self.filterOptions = self.window.findChild(PyQt5.QtWidgets.QGridLayout, 'filtersBox')
+
 
         self.streamData = self.window.findChild(PyQt5.QtWidgets.QVBoxLayout, 'streamData')
         self.streamLabel = self.window.findChild(PyQt5.QtWidgets.QLabel, 'streamLabel')

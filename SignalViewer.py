@@ -3,7 +3,7 @@ import pyqtgraph as pg
 import os
 import lslbuffer as lb
 import pylsl
-
+from scipy.signal import butter, lfilter, savgol_coeffs
 from PyQt5 import QtCore, QtGui, QtWidgets
 from scipy import signal, stats
 #import sys
@@ -126,6 +126,50 @@ class NotchButton(QtWidgets.QRadioButton):
                            "QRadioButtonn:checked { background-color: #252120 }")
 
 
+class BaseFilter:
+    def apply(self, chunk: np.ndarray):
+        '''
+        :param chunk:
+        :return:
+        '''
+        raise NotImplementedError
+
+class NotchFilter(BaseFilter):
+    def __init__(self, f0, fs, n_channels, mu=0.05):
+        self.n_channels = n_channels
+        w0 = 2*np.pi*f0/fs
+        self.a = np.array([1., 2 * (mu - 1) * np.cos(w0), (1 - 2 * mu)])
+        self.b = np.array([1., -2 * np.cos(w0), 1.]) * (1 - mu)
+        self.zi = np.zeros((max(len(self.b), len(self.a)) - 1, n_channels))
+
+    def apply(self, chunk: np.ndarray):
+        y, self.zi = lfilter(self.b, self.a, chunk, axis=0, zi=self.zi)
+        return y
+
+    def reset(self):
+        self.zi = np.zeros((max(len(self.b), len(self.a)) - 1, self.n_channels))
+
+class ButterFilter(BaseFilter):
+    def __init__(self, band, fs, n_channels, order=4):
+        self.n_channels = n_channels
+        low, high = band
+        if low is None and high is None:
+            raise ValueError('band should involve one or two not None values')
+        elif low is None:
+            self.b, self.a = butter(order, high/fs*2, btype='low')
+        elif high is None:
+            self.b, self.a = butter(order, low/fs*2, btype='high')
+        else:
+            self.b, self.a = butter(order, [low/fs*2, high/fs*2], btype='band')
+        self.zi = np.zeros((max(len(self.b), len(self.a)) - 1, n_channels))
+
+    def apply(self, chunk: np.ndarray):
+        y, self.zi = lfilter(self.b, self.a, chunk, axis=0, zi=self.zi)
+        return y
+
+    def reset(self):
+        self.zi = np.zeros((max(len(self.b), len(self.a)) - 1, self.n_channels))
+
 class RawSignalViewer(SignalViewer):
     """
     Plot raw data, each channel is on separate line
@@ -201,22 +245,26 @@ class runSignal:
         self.n_samples = self.sec_to_plot * self.fs
         self.n_channels = n_channels
         self.view_channels = view_channels
-        self.chunk_len = 8
-        self.lsl = lsl
+        self.chunk_len = 8       
         self.chunk = None
         self.length_of_chunk = 0
+
+        self.lsl = lsl
         self.a = QtWidgets.QApplication([])
         self.label1 = label1
+        self.notch_filter=None
+        self.butter_filter=None
         
     
-    def setViewer(self, layout1):
+    def setViewer(self, layout1, filterlayout):
         self.w = RawSignalViewer(self.fs, self.n_channels, self.view_channels)
         self.layout1=layout1
         self.layout1.addWidget(self.w)
         self.w.show()
+
+        self.filterlayout = filterlayout
         
         self.timer = QtCore.QElapsedTimer()
-
         self.time = 0
 
     def resetViewer(self, fs, n_channels, view_channels, lsl):
@@ -273,11 +321,24 @@ class runSignal:
                 %(self.lsl.stream_name, self.lsl.get_frequency(), int(self.timer.elapsed()/3600), \
                     int((self.timer.elapsed()/1000)/60)%60 , (self.timer.elapsed()/1000)%60, len(self.chunk)))
 
+    def applyFilter(self):
+        if self.filterlayout.itemAt(0).widget().isChecked():
+            pass 
+        elif self.filterlayout.itemAt(1).widget().isChecked():
+            self.butter_filter=None
+            self.notch_filter = NotchFilter(50, self.fs, len(self.n_channels))
+            self.chunk = self.notch_filter.apply(self.chunk)
+        elif self.filterlayout.itemAt(2).widget().isChecked():
+            self.notch_filter=None
+            self.butter_filter = ButterFilter((9, 100), self.fs, len(self.n_channels))
+            self.chunk = self.butter_filter.apply(self.chunk)
 
     def update(self):
         self.time
         self.time += self.chunk_len
         self.chunk, timestamp = self.lsl.get_next_chunk()
+        self.applyFilter()
+
         if self.chunk is not None: #Update signal and signal data if pulled chunk is not None
             self.w.update(self.chunk)
             self.updateData()

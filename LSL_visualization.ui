@@ -30,7 +30,7 @@
    <widget class="QLabel" name="label_2">
     <property name="geometry">
      <rect>
-      <x>40</x>
+      <x>30</x>
       <y>130</y>
       <width>181</width>
       <height>20</height>
@@ -56,7 +56,7 @@
    <widget class="QScrollArea" name="channelView">
     <property name="geometry">
      <rect>
-      <x>820</x>
+      <x>840</x>
       <y>150</y>
       <width>281</width>
       <height>181</height>
@@ -79,7 +79,7 @@
    <widget class="QLabel" name="label_3">
     <property name="geometry">
      <rect>
-      <x>820</x>
+      <x>840</x>
       <y>130</y>
       <width>181</width>
       <height>20</height>
@@ -92,9 +92,9 @@
    <widget class="QTreeWidget" name="streamMetaData">
     <property name="geometry">
      <rect>
-      <x>40</x>
+      <x>30</x>
       <y>150</y>
-      <width>731</width>
+      <width>741</width>
       <height>181</height>
      </rect>
     </property>
@@ -133,9 +133,9 @@
    <widget class="QWidget" name="gridLayoutWidget">
     <property name="geometry">
      <rect>
-      <x>40</x>
+      <x>30</x>
       <y>340</y>
-      <width>1061</width>
+      <width>921</width>
       <height>291</height>
      </rect>
     </property>
@@ -198,6 +198,17 @@
       </widget>
      </item>
     </layout>
+   </widget>
+   <widget class="QWidget" name="gridLayoutWidget_2">
+    <property name="geometry">
+     <rect>
+      <x>960</x>
+      <y>360</y>
+      <width>160</width>
+      <height>251</height>
+     </rect>
+    </property>
+    <layout class="QGridLayout" name="filtersBox"/>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
