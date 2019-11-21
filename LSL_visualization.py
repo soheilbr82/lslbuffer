@@ -1,6 +1,7 @@
 #import lslbuffer as lb
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
+from pyqtgraph.flowchart import Flowchart, Node
 import pyqtgraph.console
 import lslbuffer as lb
 
@@ -21,6 +22,7 @@ class LSLgui():
         self.Form, self.Window = uic.loadUiType("LSL_visualization.ui")
         self.lslobj = dict()
         self.availStrms = dict()
+        self.filters=dict()
         self.channels = []
         self.showChnls=[]
         self.available = False
@@ -131,11 +133,47 @@ class LSLgui():
         self.current_stream_name = None
 
     def loadFilters(self):
-        self.filterOptions.addWidget(PyQt5.QtWidgets.QRadioButton("No Filter"))
-        self.filterOptions.itemAt(0).widget().click()
+        self.filterOptions.addWidget(PyQt5.QtWidgets.QTreeWidget())
+        self.filterOptions.itemAt(0).widget().setColumnCount(2)
+        self.filterOptions.itemAt(0).widget().header().setSectionResizeMode(3)
 
-        self.filterOptions.addWidget(PyQt5.QtWidgets.QRadioButton("Notch Filter"))
-        self.filterOptions.addWidget(PyQt5.QtWidgets.QRadioButton("Butter Filter"))
+        noFilter = PyQt5.QtWidgets.QTreeWidgetItem(["No Filter"])
+        self.filterOptions.itemAt(0).widget().addTopLevelItem(noFilter)
+
+        notch = PyQt5.QtWidgets.QTreeWidgetItem(["Notch Filter"])
+        self.filterOptions.itemAt(0).widget().addTopLevelItem(notch)
+
+        butter = PyQt5.QtWidgets.QTreeWidgetItem(["Butter Filter"])
+        self.filterOptions.itemAt(0).widget().addTopLevelItem(butter)
+
+        i1 = PyQt5.QtWidgets.QTreeWidgetItem(["Low Pass"])
+        i2 = PyQt5.QtWidgets.QTreeWidgetItem(["High Pass"])
+        butter.addChild(i1)
+        butter.addChild(i2)
+
+        lowPass = PyQt5.QtWidgets.QLineEdit()
+        lowPass.setFixedHeight(30)
+        lowPass.setFixedWidth(125)
+
+        highPass = PyQt5.QtWidgets.QLineEdit()
+        highPass.setFixedHeight(30)
+        highPass.setFixedWidth(125)
+
+        self.band=dict()
+        self.band["low"] = lowPass
+        self.band["high"] = highPass
+        
+        self.filters["noFilter"]=PyQt5.QtWidgets.QRadioButton()
+        self.filters["noFilter"].click()
+        self.filters["notch"]=PyQt5.QtWidgets.QRadioButton()
+        self.filters["butter"]=PyQt5.QtWidgets.QRadioButton()
+
+        self.filterOptions.itemAt(0).widget().setItemWidget(noFilter, 1, self.filters["noFilter"])
+        self.filterOptions.itemAt(0).widget().setItemWidget(notch, 1, self.filters["notch"])
+        self.filterOptions.itemAt(0).widget().setItemWidget(butter, 1, self.filters["butter"])
+        self.filterOptions.itemAt(0).widget().setItemWidget(i1, 1, lowPass)
+        self.filterOptions.itemAt(0).widget().setItemWidget(i2, 1, highPass)
+
 
     def showStream(self):
         self.showChnls=[]
@@ -163,7 +201,7 @@ class LSLgui():
             self.info = self.lslobj[self.current_stream_name].inlet.info()
             self.graph = runSignal(self.info.nominal_srate(), self.lslobj[self.current_stream_name].get_channels(), \
                                 self.showChnls, self.lslobj[self.current_stream_name], self.streamLabel)
-            self.graph.setViewer(self.signalViewer, self.filterOptions)
+            self.graph.setViewer(self.signalViewer, self.filters, self.band)
             self.graph.createTimer()
             self.graph.setTimer()
             self.visualButton.clicked.connect(self.showStream)
@@ -229,7 +267,7 @@ class LSLgui():
 
         self.query = self.window.findChild(PyQt5.QtWidgets.QTreeWidget, 'streamMetaData')
         self.query.setColumnCount(2)
-        self.query.header().setSectionResizeMode(1)
+        self.query.header().setSectionResizeMode(3)
 
 
         self.queryButton.clicked.connect(self.loadAvailableStreams)
