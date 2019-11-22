@@ -76,7 +76,7 @@ First, start streaming data. If no hardware is available, open another terminal 
 
 ```python
 import lslbuffer as lb
-from LSLvisualization import LSLgui
+from LSL_visualization import LSLgui
 from viz import rt_timeseries
 import sys
 
