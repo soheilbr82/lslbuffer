@@ -2,11 +2,9 @@
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 import lslbuffer as lb
-
 import PyQt5
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication
-
 import numpy as np
 import pylsl
 from SignalViewer import runSignal
@@ -46,12 +44,12 @@ class LSLgui():
             #self.lslobj[lsl.stream_name] = lsl
             #print()
 
-        self.start()
+        #self.start()
 
     def start(self):
         self.build()
-        sys.exit(self.app.exec_())
-
+        #sys.exit(self.app.exec_())
+        self.app.exec_()
 
     def loadChannels(self):
         self.getStreamName()
@@ -214,12 +212,14 @@ class LSLgui():
         if self.graph != None:
             self.graph.main_timer.stop()
         for key in self.lslobj.keys():
-            self.lslobj[key].disconnect()
-            self.lslobj[key] = None
-
+            if self.lslobj[key]:
+                self.lslobj[key].disconnect()
+                self.lslobj[key] = None
+        self.window.close()
         self.app.quit()
 
     def build(self):
+        #QApplication.setGraphicsSystem("raster")
         self.app = QApplication([])
         self.window = self.Window()
         self.window.setWindowTitle('PyQt5 graph example: LSL GUI')
@@ -272,7 +272,5 @@ class LSLgui():
         self.startButton.clicked.connect(self.startStream)
         self.quitButton.clicked.connect(self.quitApp)
 
-
-
         self.window.show()
-        sys.exit(self.app.exec_())
+        #sys.exit(self.app.exec_())
