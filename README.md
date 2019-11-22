@@ -68,11 +68,11 @@ eeg_graph = rt_timeseries.Grapher(streams[0],250*10,'k',invert=True)
 
 
 
-# VersaStream
+# Running App using iPython
 
 The code that runs the main LSL GUI application
 
-First, start streaming data. If no hardware is available, open another terminal window and generate the dummy stream by typing "python -m start_stream --dummy" in the command line. Switch back to the original window and run the program.
+First, start streaming data. If no hardware is available, open another terminal window and generate the dummy stream by typing "python -m start_stream --dummy" in the command line. Switch back to the original window and open an iPython console using the command below:
 
 ```bash
 ipython --pylab=qt
