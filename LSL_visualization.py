@@ -1,8 +1,6 @@
 #import lslbuffer as lb
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
-from pyqtgraph.flowchart import Flowchart, Node
-import pyqtgraph.console
 import lslbuffer as lb
 
 import PyQt5
@@ -11,8 +9,6 @@ from PyQt5.QtWidgets import QApplication
 
 import numpy as np
 import pylsl
-from pyqtgraph.dockarea import *
-from viz import rt_timeseries
 from SignalViewer import runSignal
 import sys
 
@@ -279,3 +275,4 @@ class LSLgui():
 
 
         self.window.show()
+        sys.exit(self.app.exec_())
