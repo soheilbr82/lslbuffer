@@ -13,44 +13,43 @@ import sys
 
 class LSLgui():
     def __init__(self):
+
+        #Load the UI create by Qt Creator
         self.Form, self.Window = uic.loadUiType("LSL_visualization.ui")
-        self.lslobj = dict()
-        self.availStrms = dict()
-        self.filters=dict()
-        self.channels = []
+
+        
+        self.lslobj = dict() #holds all of the lsl stream objects read in by lb.LSLInlets()
+        self.availStrms = dict() #holds information about all of the availableStreams for the query
+        self.filters=dict() #holds UI information for the various filters, i.e. notch and butter
+        self.channels = [] #holds the QCheckList object for the channels for the current available stream
         self.showChnls=[]
         self.available = False
         self.current_stream_name = None
         self.streamView = False
         self.graph = None
         
-        #for index, stream in enumerate(['EEG', 'Markers']):
-        #print("Getting all available {} LSL streams".format(stream))
-        streams = pylsl.resolve_streams(wait_time=1.0)#pylsl.resolve_byprop('type', stream, timeout=2) 
+        #Finds all available streams
+        #If none are available, then a flag check let's the user know that none are available
+        #If streams are available, then each stream is stored in an object with its metadata
+        streams = pylsl.resolve_streams(wait_time=1.0)
         if len(streams) == 0:
             print("No streams available.")
-            #print("No {} streams available.".format(stream))
 
         else:       
             self.available = True    
-            print("Got all available streams. Starting streams now.....") 
-            #print("Got all {} streams. Starting streams now.....".format(stream))          
+            print("Got all available streams. Starting streams now.....")        
 
         for s in streams:
             lsl = lb.LSLInlet(s, name=s.name())
             self.lslobj[lsl.stream_name] = lsl
             print()
-            #lsl = lb.LSLInlet(s, name=s)
-            #self.lslobj[lsl.stream_name] = lsl
-            #print()
 
-        #self.start()
-
+    #Call this function to start the application
     def start(self):
         self.build()
-        #sys.exit(self.app.exec_())
-        self.app.exec_()
+        sys.exit(self.app.exec_())
 
+    #Loads all of the available channels for the current stream under observation
     def loadChannels(self):
         self.getStreamName()
         print("Load channels for {}".format(self.current_stream_name))
@@ -64,7 +63,9 @@ class LSLgui():
 
         self.availStrms[self.current_stream_name].clicked.connect(self.clearChannels)
         self.queryButton.clicked.connect(self.loadAvailableStreams)
-                
+
+    #This function is called when a different stream is chosen to view
+    #Clears out the widget containing the channels from the previous stream         
     def clearChannels(self):
         self.resetStreamName()
         for i in reversed(range(self.view.count())):
@@ -75,13 +76,17 @@ class LSLgui():
             
         self.streamClicked()
         
-
+    #This function is called to check which available stream was chosen to view
+    #Once a stream is found, it populates a widget with its available channels to view
     def streamClicked(self):
         for index, stream in enumerate(self.availStrms.keys()):
             if not self.availStrms[stream].isChecked():
                 self.availStrms[stream].clicked.connect(self.loadChannels)
+                break
         
-
+    #This function is called when someone wants to populate the query with available streams
+    #Populates query with stream name and the metadata for that stream, i.e. number of channels
+    #sampling rate, channel format, uid, and hostname.
     def loadAvailableStreams(self):
         self.query.clear()
 
@@ -116,15 +121,18 @@ class LSLgui():
             item = PyQt5.QtWidgets.QTreeWidgetItem([" No available streams that meet the given criteria!\n Please make sure that streams are running."])
             self.query.addTopLevelItem(item)
 
-
+    #Keeps track of the current stream name
+    #Will be removed in the future because it is redundant to streamClicked()
     def getStreamName(self):
         for index, stream in enumerate(self.availStrms.keys()):
             if self.availStrms[stream].isChecked():
                 self.current_stream_name = stream
                 break
     
+    #If not stream wants to be viewed, then this function resets the current stream to None
     def resetStreamName(self):
         self.current_stream_name = None
+
 
     def loadFilters(self):
         self.filterOptions.addWidget(PyQt5.QtWidgets.QTreeWidget())
@@ -157,17 +165,30 @@ class LSLgui():
         self.band["low"] = lowPass
         self.band["high"] = highPass
         
-        self.filters["noFilter"]=PyQt5.QtWidgets.QRadioButton()
-        self.filters["noFilter"].click()
-        self.filters["notch"]=PyQt5.QtWidgets.QRadioButton()
-        self.filters["butter"]=PyQt5.QtWidgets.QRadioButton()
+        #self.filters["noFilter"]=PyQt5.QtWidgets.QRadioButton()
+        #self.filters["noFilter"].click()
+        #self.filters["notch"]=PyQt5.QtWidgets.QRadioButton()
+        #self.filters["butter"]=PyQt5.QtWidgets.QRadioButton()
+
+        self.filters["noFilter"]=PyQt5.QtWidgets.QCheckBox()
+        self.filters["noFilter"].setChecked(True)
+        self.filters["notch"]=PyQt5.QtWidgets.QCheckBox()
+        self.filters["butter"]=PyQt5.QtWidgets.QCheckBox()
 
         self.filterOptions.itemAt(0).widget().setItemWidget(noFilter, 1, self.filters["noFilter"])
         self.filterOptions.itemAt(0).widget().setItemWidget(notch, 1, self.filters["notch"])
         self.filterOptions.itemAt(0).widget().setItemWidget(butter, 1, self.filters["butter"])
         self.filterOptions.itemAt(0).widget().setItemWidget(i1, 1, lowPass)
         self.filterOptions.itemAt(0).widget().setItemWidget(i2, 1, highPass)
-
+        
+        self.applyFilterBtn = PyQt5.QtWidgets.QPushButton("Apply Filter(s)")
+        self.filterButton.addWidget(self.applyFilterBtn)
+    
+    def applyFilters(self):
+        if self.graph:
+            self.graph.applyFilter()
+        else:
+            print("None type object")
 
     def showStream(self):
         self.showChnls=[]
@@ -199,15 +220,20 @@ class LSLgui():
             self.graph.createTimer()
             self.graph.setTimer()
             self.visualButton.clicked.connect(self.showStream)
+            self.applyFilterBtn.clicked.connect(self.applyFilters)
 
+    #Starts/resumes the current visual of the signal viewer
+    #Does not pick up from the moment it stopped, but rather the moment it would be in real-time
     def startStream(self):
         if self.graph != None:
             self.graph.start()
 
+    #Stops the current visual of the signal viewer
     def stopStream(self):
         if self.graph != None:
             self.graph.stop()
 
+    #Makes sure to exit the application cleanly
     def quitApp(self):
         if self.graph != None:
             self.graph.main_timer.stop()
@@ -218,8 +244,9 @@ class LSLgui():
         self.window.close()
         self.app.quit()
 
+
+    #Builds the GUI for the LSL app
     def build(self):
-        #QApplication.setGraphicsSystem("raster")
         self.app = QApplication([])
         self.window = self.Window()
         self.window.setWindowTitle('PyQt5 graph example: LSL GUI')
@@ -238,7 +265,7 @@ class LSLgui():
         self.startButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'startStream')
         self.quitButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'quitButton')
         self.filterOptions = self.window.findChild(PyQt5.QtWidgets.QGridLayout, 'filtersBox')
-
+        self.filterButton = self.window.findChild(PyQt5.QtWidgets.QGridLayout, 'applyFilter')
 
         self.streamData = self.window.findChild(PyQt5.QtWidgets.QVBoxLayout, 'streamData')
         self.streamLabel = self.window.findChild(PyQt5.QtWidgets.QLabel, 'streamLabel')
@@ -273,4 +300,3 @@ class LSLgui():
         self.quitButton.clicked.connect(self.quitApp)
 
         self.window.show()
-        #sys.exit(self.app.exec_())
