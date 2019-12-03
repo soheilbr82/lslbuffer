@@ -1,9 +1,7 @@
 from sys import platform
 from subprocess import Popen, PIPE, STDOUT, run
-import pdb
 
 if __name__ == '__main__':
-    pdb.set_trace()
     if platform == "linux" or platform == "linux2":
         from LSL_visualization import LSLgui
 
