@@ -75,13 +75,5 @@ The code that runs the main LSL GUI application
 First, start streaming data. If no hardware is available, open another terminal window and generate the dummy stream by typing "python -m start_stream --dummy" in the command line. Switch back to the original window and open an iPython console using the command below:
 
 ```bash
-ipython --pylab=qt
-```
-
-```python
-In [1]: from LSL_visualization import LSLgui
-
-In [2]: app = LSLgui()
-
-In [3]: app.start()
+python VersaStream.py
 ```
