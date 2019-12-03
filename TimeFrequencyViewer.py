@@ -360,23 +360,6 @@ class runSignal:
                                    int((self.timer.elapsed() / 1000) / 60) % 60, (self.timer.elapsed() / 1000) % 60,
                                    len(self.chunk)))
 
-    # Defines low band pass
-    def lowPass(self):
-        if len(self.band["low"].text()) == 0:
-            self.low = None
-        else:
-            if 0.1 <= float(self.band["low"].text()):
-                self.low = float(self.band["low"].text())
-                print(self.low)
-
-    # Defines high band pass
-    def highPass(self):
-        if len(self.band["high"].text()) == 0:
-            self.high = None
-        else:
-            if float(self.band["high"].text()) < self.fs / 2:
-                self.high = float(self.band["high"].text())
-
     # Applies filters to real-time EEG data
     # Windows for each filter will appear when button is clicked
     # Window will not disappear unless another filter or no filter is specified and
