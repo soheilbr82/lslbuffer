@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QApplication
 import numpy as np
 import pylsl
 from SignalViewer import runSignal
+from TimeFrequencyViewer import runSignal
 import sys
 
 
@@ -275,7 +276,7 @@ class LSLgui():
             self.graph = runSignal(self.info.nominal_srate(), self.lslobj[self.current_stream_name].get_channels(),
                                    self.show_channels, self.lslobj[self.current_stream_name], self.streamLabel)
             self.graph.createTimer()
-            self.graph.setViewer(self.signalViewer, self.filters, self.band)
+            self.graph.setViewer(self.TimeFrequencyViewer, self.filters, self.band)
             self.graph.setTimer()
             self.visualTimeFreqButton.clicked.connect(self.showTFStream)
             # self.applyFilterBtn.clicked.connect(self.applyFilters)
@@ -317,6 +318,7 @@ class LSLgui():
         self.StreamName = self.window.findChild(PyQt5.QtWidgets.QLineEdit, 'StreamName')
 
         self.signalViewer = self.window.findChild(PyQt5.QtWidgets.QGridLayout, 'signalViewer')
+        self.TimeFrequencyViewer = self.window.findChild(PyQt5.QtWidgets.QGridLayout, 'TimeFrequencyViewer')
         self.signalData = self.window.findChild(PyQt5.QtWidgets.QVBoxLayout, 'signalMetaData')
         self.stopButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'stopStream')
         self.startButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'startStream')
