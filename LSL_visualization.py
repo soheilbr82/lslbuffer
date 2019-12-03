@@ -225,7 +225,7 @@ class LSLgui():
             if self.graph.w.isActive():
                 print("Active")
                 self.graph.stop()
-                self.graph.resetViewer(self.info.nominal_srate(), self.lslobj[self.current_stream_name].get_channels(), \
+                self.graph.resetViewer(self.info.nominal_srate(), self.lslobj[self.current_stream_name].get_channels(),
                                        self.show_channels, self.lslobj[self.current_stream_name])
                 self.graph.setTimer()
 
@@ -233,13 +233,52 @@ class LSLgui():
             self.getStreamName()
             self.loadFilters()
             self.info = self.lslobj[self.current_stream_name].inlet.info()
-            self.graph = runSignal(self.info.nominal_srate(), self.lslobj[self.current_stream_name].get_channels(), \
+            self.graph = runSignal(self.info.nominal_srate(), self.lslobj[self.current_stream_name].get_channels(),
                                    self.show_channels, self.lslobj[self.current_stream_name], self.streamLabel)
             self.graph.createTimer()
             self.graph.setViewer(self.signalViewer, self.filters, self.band)
             self.graph.setTimer()
             self.visualButton.clicked.connect(self.showStream)
+            self.visualTimeFreqButton.clicked.connect(self.showStream)
             self.applyFilterBtn.clicked.connect(self.applyFilters)
+
+    # Shows the signal stream of the selected channels
+    def showTFStream(self):
+        self.show_channels = []
+
+        # # Checks to see if the 'All Channels' button is checked
+        # if self.view.itemAt(0).widget().isChecked():
+        #     self.show_channels = range(len(self.channels))
+        #     print(self.show_channels)
+
+        # If not all channels are wanting to be viewed, created a list of the selected channels chosen for the viewer
+        # else:
+        for index, channel in enumerate(self.channels):
+            if channel.isChecked():
+                self.show_channels.append(index)
+        print(self.show_channels)
+
+        # Checks to see if a current signal is being viewed
+        if self.graph is not None:
+            if self.graph.w.isActive():
+                print("Active")
+                self.graph.stop()
+                self.graph.resetViewer(self.info.nominal_srate(),
+                                       self.lslobj[self.current_stream_name].get_channels(),
+                                       self.show_channels, self.lslobj[self.current_stream_name])
+                self.graph.setTimer()
+
+        else:
+            self.getStreamName()
+            # self.loadFilters()
+            self.info = self.lslobj[self.current_stream_name].inlet.info()
+            self.graph = runSignal(self.info.nominal_srate(), self.lslobj[self.current_stream_name].get_channels(),
+                                   self.show_channels, self.lslobj[self.current_stream_name], self.streamLabel)
+            self.graph.createTimer()
+            self.graph.setViewer(self.signalViewer, self.filters, self.band)
+            self.graph.setTimer()
+            self.visualTimeFreqButton.clicked.connect(self.showTFStream)
+            # self.applyFilterBtn.clicked.connect(self.applyFilters)
 
     # Starts/resumes the current visual of the signal viewer
     # Does not pick up from the moment it stopped, but rather the moment it would be in real-time
@@ -273,6 +312,7 @@ class LSLgui():
 
         self.queryButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'queryButton')
         self.visualButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'visualizeButton')
+        self.visualTimeFreqButton = self.window.findChild(PyQt5.QtWidgets.QPushButton, 'visualizeTimeFreqButton')
         self.availableStreams = self.window.findChild(PyQt5.QtWidgets.QComboBox, 'availableStreams')
         self.StreamName = self.window.findChild(PyQt5.QtWidgets.QLineEdit, 'StreamName')
 
@@ -309,6 +349,7 @@ class LSLgui():
 
         self.queryButton.clicked.connect(self.loadAvailableStreams)
         self.visualButton.clicked.connect(self.showStream)
+        self.visualTimeFreqButton.clicked.connect(self.showTFStream)
         self.stopButton.clicked.connect(self.stopStream)
         self.startButton.clicked.connect(self.startStream)
         self.quitButton.clicked.connect(self.quitApp)

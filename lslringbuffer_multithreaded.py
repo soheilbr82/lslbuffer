@@ -1,6 +1,6 @@
-#from queue import Queue
-#from threading import Thread
-#import time
+from queue import Queue
+from threading import Thread
+import time
 from pylsl import StreamInlet, resolve_stream, StreamInfo, StreamOutlet
 # Options for Ringbuffer
 # Option 1:
@@ -15,16 +15,15 @@ from numpy_ringbuffer import RingBuffer
 
 
 class LSLRINGBUFFER:
-    def __init__(self, lsl_type='EEG', fs=250, buffer_duration=4.0, num_channels=32, filter = filter):
-  #      self.queue = queue
-        self.lsl_type = lsl_type # Type of LSL that has to be parsed into the ring buffer
-        self.fs = fs # Sampling rate of LSL
-        self.buffer_duration = buffer_duration # Duration of Buffer
-        self.num_channels = num_channels # Number of channels
+    def __init__(self, lsl_type='EEG', fs=250, buffer_duration=4.0, num_channels=32, filter=filter):
+        #      self.queue = queue
+        self.lsl_type = lsl_type  # Type of LSL that has to be parsed into the ring buffer
+        self.fs = fs  # Sampling rate of LSL
+        self.buffer_duration = buffer_duration  # Duration of Buffer
+        self.num_channels = num_channels  # Number of channels
         self.filter = filter
 
-
-    def run(self):#,queue):
+    def run(self):  # ,queue):
 
         buffer_length = int(self.fs * self.buffer_duration)
 
@@ -40,13 +39,13 @@ class LSLRINGBUFFER:
         while True:
             # get a new data chunk (you can also omit the timestamp part if you're not interested)
             sample, timestamp = inlet.pull_chunk()
-            self.filter.apply(sample)
+            # self.filter.apply(sample)
             # If new chunk is received, then put in the buffer
             if timestamp:
                 buffer_data.extend(np.array(sample))
-            # Put the data in the thread
-            #queue.put(buffer_data)
-                print(sample)
+                # Put the data in the thread
+                Queue.queue.put(buffer_data)
+                # print(sample)
 
 
 class BaseFilter:
@@ -57,23 +56,24 @@ class BaseFilter:
         '''
         raise NotImplementedError
 
+
 class NotchFilter(BaseFilter):
     def __init__(self, f0, fs, n_channels, mu=0.05):
         self.n_channels = n_channels
-        w0 = 2*np.pi*f0/fs
+        w0 = 2 * np.pi * f0 / fs
         self.a = np.array([1., 2 * (mu - 1) * np.cos(w0), (1 - 2 * mu)])
         self.b = np.array([1., -2 * np.cos(w0), 1.]) * (1 - mu)
         self.zi = np.zeros((max(len(self.b), len(self.a)) - 1, n_channels))
 
-    def apply(self, chunk: np.ndarray):
-        y, self.zi = lfilter(self.b, self.a, chunk, axis=0, zi=self.zi)
-        return y
+    # def apply(self, chunk: np.ndarray):
+    #     y, self.zi = lfilter(self.b, self.a, chunk, axis=0, zi=self.zi)
+    #     return y
 
     def reset(self):
         self.zi = np.zeros((max(len(self.b), len(self.a)) - 1, self.n_channels))
+
 
 if __name__ == "__main__":
     notch = NotchFilter(50, 250, 32)
     lsl = LSLRINGBUFFER(lsl_type='EEG', fs=250, buffer_duration=4.0, num_channels=32, filter=notch)
     lsl.run()
-
