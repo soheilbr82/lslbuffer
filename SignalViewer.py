@@ -189,15 +189,6 @@ class RawSignalViewer(SignalViewer):
         self.getPlotItem().setYRange(0, self.n_signals_to_plot+1)
         self.getPlotItem().disableAutoRange()
 
-        # next previous channels groups buttons
-        #next_channels = CuteButton(self, 'right-arrow.png')
-        #next_channels.setGeometry(18, 0, 18, 25)
-        #prev_channels = CuteButton(self, 'left-arrow.png')
-        #next_channels.clicked.connect(lambda : self.next_channels_group( 1))
-        #prev_channels.clicked.connect(lambda : self.next_channels_group(-1))
-
-        # attributes
-        #self.names = names
         self.names = []
         self.indices = view_channels
 
@@ -208,7 +199,7 @@ class RawSignalViewer(SignalViewer):
         self.mean = np.zeros(self.n_signals)
         self.iqr = np.ones(self.n_signals)
         self.stats_update_counter = 0
-        self.indexes_to_plot = [slice(j, self.n_signals) for j in range(0, self.n_signals)]#[slice(j, min(self.n_signals, j+5)) for j in range(0, self.n_signals, 5)]
+        self.indexes_to_plot = [slice(j, self.n_signals) for j in range(0, self.n_signals)]
         self.current_indexes_ind = 0
         self.c_slice = self.indexes_to_plot[self.current_indexes_ind]
         self.reset_labels()
@@ -221,7 +212,7 @@ class RawSignalViewer(SignalViewer):
         pass
 
     def reset_labels(self):
-        ticks = [[(val, tick) for val, tick in zip(range(1, self.n_signals_to_plot + 1), self.names[self.c_slice])]]#[self.c_slice])]]
+        ticks = [[(val, tick) for val, tick in zip(range(1, self.n_signals_to_plot + 1), self.names[self.c_slice])]]
         self.getPlotItem().getAxis('left').setTicks(ticks)
 
     def prepare_y_data(self, chunk_len):
@@ -257,16 +248,16 @@ class runSignal:
         self.chunk = None
         self.length_of_chunk = 0
 
-        self.lsl = lsl
+        self.lsl = lsl #Holds current stream object
         self.a = QtWidgets.QApplication([])
-        self.label1 = label1
+        self.label1 = label1 #Widget that contains real-time stream metadata
         self.notch_filter=None
         self.butter_filter=None
-        self.apply_filters = False
-        self.q = Queue()
+        self.apply_filters = False #Checks to see if filters are wanting to be applied by the user
+        self.q = Queue() #buffer for real-time data -> tracks last 4 seconds of data
         
         
-    
+    #Sets the graph of the signal viewer
     def setViewer(self, layout1, filters=None, band=None):
         self.w = RawSignalViewer(self.fs, self.n_channels, self.view_channels)
         self.layout1=layout1
@@ -287,6 +278,8 @@ class runSignal:
         self.timer = QtCore.QElapsedTimer()
         self.time = 0
 
+    #Reset the signal viewer graph if new channels are selected
+    #Clears out widgets of previous signal objects and then resets the new signal object with the new list of channels
     def resetViewer(self, fs, n_channels, view_channels, lsl):
         self.fs = fs
         self.n_channels = n_channels
@@ -303,13 +296,15 @@ class runSignal:
     def createTimer(self):
         self.main_timer = QtCore.QTimer()
 
-    
+    #sets the application timer for the signal viewer
+    #Also sets a clock timer to track how long the signal has been viewed in real-time
     def setTimer(self):
         self.label1.setText("Getting Stream Data......")
         self.main_timer.timeout.connect(self.update)
         self.main_timer.start(30)
         self.timer.start()
 
+    #Resumes the signal viewer in real-time
     def start(self):
         if self.main_timer.isActive() == True:
             print("timer is active")
@@ -318,6 +313,7 @@ class runSignal:
             print("timer is inactive")
             self.main_timer.start()
 
+    #Pauses the signal viewer
     def stop(self):
         if self.main_timer.isActive() == True:
             print("timer is active")
@@ -373,6 +369,7 @@ class runSignal:
     #Window will not disappear unless another filter or no filter is specified and 
     def applyFilter(self):
 
+        #Closes all other windows that has a filter
         if self.filters["noFilter"].isChecked():
             print("No filter")
             if self.w2.isVisible():
@@ -383,6 +380,7 @@ class runSignal:
             if self.apply_filters == True:
                 self.apply_filters = False
 
+        #Generates a new window of signal data per filter desired
         else:
             if self.filters["notch"].isChecked():
                 if self.apply_filters == False:

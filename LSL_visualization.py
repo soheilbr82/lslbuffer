@@ -17,83 +17,86 @@ class LSLgui():
         #Load the UI create by Qt Creator
         self.Form, self.Window = uic.loadUiType("LSL_visualization.ui")
 
-        
-        self.lslobj = dict() #holds all of the lsl stream objects read in by lb.LSLInlets()
         self.availStrms = dict() #holds information about all of the availableStreams for the query
         self.filters=dict() #holds UI information for the various filters, i.e. notch and butter
         self.channels = [] #holds the QCheckList object for the channels for the current available stream
-        self.showChnls=[]
-        self.available = False
-        self.current_stream_name = None
+        self.showChnls=[] #holds the channels selected for visualization
+        self.current_stream_name = None #holds the current stream name of the stream wanting to be observed
         self.streamView = False
-        self.graph = None
-        
-        #Finds all available streams
-        #If none are available, then a flag check let's the user know that none are available
-        #If streams are available, then each stream is stored in an object with its metadata
-        streams = pylsl.resolve_streams(wait_time=1.0)
-        if len(streams) == 0:
-            print("No streams available.")
-
-        else:       
-            self.available = True    
-            print("Got all available streams. Starting streams now.....")        
-
-        for s in streams:
-            lsl = lb.LSLInlet(s, name=s.name())
-            self.lslobj[lsl.stream_name] = lsl
-            print()
+        self.graph = None #holds the signal viewer object that plots the current stream
 
     #Call this function to start the application
     def start(self):
         self.build()
         sys.exit(self.app.exec_())
 
+    #This function searches for existing streams and stores their information
+    #When the user wants to generate a query, this function is called to refresh the available streams
+    def popQuery(self):
+        #Finds all available streams
+        #If none are available, then a flag check let's the user know that none are available
+        #If streams are available, then each stream is stored in an object with its metadata
+
+        self.available = False #holds the truth state of whether there are streams available when the application is running
+        self.lslobj = dict() #holds all of the lsl stream objects read in by lb.LSLInlets()
+        streams = pylsl.resolve_streams(wait_time=1.0)
+
+        if len(streams) == 0:
+            print("No streams available.")
+            self.clearChannels()
+         
+        else:  
+
+            self.available = True    
+            print("Got all available streams. Starting streams now.....")        
+
+            for s in streams:
+                lsl = lb.LSLInlet(s, name=s.name())
+                self.lslobj[lsl.stream_name] = lsl
+                print()
+
     #Loads all of the available channels for the current stream under observation
     def loadChannels(self):
-        self.getStreamName()
+        #Gets the name of the chosen stream needed under observation
+        #self.getStreamName()
         print("Load channels for {}".format(self.current_stream_name))
+
+        #Resets signal viewer object for the new channels to be viewed
         self.graph = None
 
         self.view.addWidget(PyQt5.QtWidgets.QCheckBox("View All Channels"))
 
+        #Loads the available channels for the current stream under observation
         for index, channel in enumerate(self.lslobj[self.current_stream_name].get_channels()):
             self.channels.append(PyQt5.QtWidgets.QCheckBox("%s" % channel))
             self.view.addWidget(self.channels[index])
 
-        self.availStrms[self.current_stream_name].clicked.connect(self.clearChannels)
-        self.queryButton.clicked.connect(self.loadAvailableStreams)
-
     #This function is called when a different stream is chosen to view
     #Clears out the widget containing the channels from the previous stream         
     def clearChannels(self):
+
+        #Resets stream name and updates with new chosen stream
         self.resetStreamName()
+
+        #Removes the channel list from the previous stream
         for i in reversed(range(self.view.count())):
             if self.view.itemAt(i).widget().isChecked():
                 self.view.itemAt(i).widget().toggle()    
 
             self.view.itemAt(i).widget().setParent(None)
-            
-        self.streamClicked()
-        
-    #This function is called to check which available stream was chosen to view
-    #Once a stream is found, it populates a widget with its available channels to view
-    def streamClicked(self):
-        for index, stream in enumerate(self.availStrms.keys()):
-            if not self.availStrms[stream].isChecked():
-                self.availStrms[stream].clicked.connect(self.loadChannels)
-                break
-        
+
+ 
+
     #This function is called when someone wants to populate the query with available streams
     #Populates query with stream name and the metadata for that stream, i.e. number of channels
     #sampling rate, channel format, uid, and hostname.
     def loadAvailableStreams(self):
+
+        #Refreshes query every time query button is clicked
         self.query.clear()
+        self.popQuery()
 
         if self.available != False:
-            if len(self.lslobj.keys()) == 0:
-                item = PyQt5.QtWidgets.QTreeWidgetItem(["No available streams of the given criteria!"])
-            else:
                 for index, stream in enumerate(self.lslobj.keys()):
                     self.info = self.lslobj[stream].inlet.info()
                     size = PyQt5.QtCore.QSize(100,50)
@@ -116,24 +119,33 @@ class LSLgui():
                     self.availStrms[stream] = chnlButton
                     self.query.setItemWidget(item, 1, chnlButton)
                 
-                self.streamClicked()
+                self.getStreamName()
         else:
             item = PyQt5.QtWidgets.QTreeWidgetItem([" No available streams that meet the given criteria!\n Please make sure that streams are running."])
             self.query.addTopLevelItem(item)
 
-    #Keeps track of the current stream name
-    #Will be removed in the future because it is redundant to streamClicked()
+    #Updates current stream name for the chosen stream
+    #Calls the function to visualize available channels for the current stream
     def getStreamName(self):
+
         for index, stream in enumerate(self.availStrms.keys()):
-            if self.availStrms[stream].isChecked():
+            if not self.availStrms[stream].isChecked():
+
+                #Clears the channel list of the previous stream if new stream is chosen
+                if self.current_stream_name is not None and stream != self.current_stream_name:
+                    self.availStrms[self.current_stream_name].clicked.connect(self.clearChannels)
+
                 self.current_stream_name = stream
-                break
+                self.availStrms[stream].clicked.connect(self.loadChannels)
+
+                break #loop breaks as soon as it find the current stream to avoid unnecessary iterations
     
     #If not stream wants to be viewed, then this function resets the current stream to None
     def resetStreamName(self):
         self.current_stream_name = None
 
 
+    #Loads filter options and checklist of filters to be applied
     def loadFilters(self):
         self.filterOptions.addWidget(PyQt5.QtWidgets.QTreeWidget())
         self.filterOptions.itemAt(0).widget().setColumnCount(2)
@@ -184,24 +196,30 @@ class LSLgui():
         self.applyFilterBtn = PyQt5.QtWidgets.QPushButton("Apply Filter(s)")
         self.filterButton.addWidget(self.applyFilterBtn)
     
+    #Initially applies the filter if no filter has been used yet
     def applyFilters(self):
         if self.graph:
             self.graph.applyFilter()
         else:
             print("None type object")
 
+    #Shows the signal stream of the selected channels
     def showStream(self):
         self.showChnls=[]
 
+        #Checks to see if the 'All Channels' button is checked
         if self.view.itemAt(0).widget().isChecked():
             self.showChnls = range(len(self.channels))
             print(self.showChnls)
+
+        #If not all channels are wanting to be viewed, created a list of the selected channels chosen for the viewer
         else:
             for index, channel in enumerate(self.channels):
                 if channel.isChecked():
                     self.showChnls.append(index)
             print(self.showChnls)
-
+        
+        #Checks to see if a current signal is being viewed
         if self.graph != None:
             if self.graph.w.isActive():
                 print("Active")
@@ -216,8 +234,8 @@ class LSLgui():
             self.info = self.lslobj[self.current_stream_name].inlet.info()
             self.graph = runSignal(self.info.nominal_srate(), self.lslobj[self.current_stream_name].get_channels(), \
                                 self.showChnls, self.lslobj[self.current_stream_name], self.streamLabel)
-            self.graph.setViewer(self.signalViewer, self.filters, self.band)
             self.graph.createTimer()
+            self.graph.setViewer(self.signalViewer, self.filters, self.band)
             self.graph.setTimer()
             self.visualButton.clicked.connect(self.showStream)
             self.applyFilterBtn.clicked.connect(self.applyFilters)
