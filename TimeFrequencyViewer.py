@@ -332,16 +332,18 @@ class runSignal:
         else:
             print("timer is inactive")
 
-    def updateData(self):
+    # Create a buffer of the last four seconds of data acquired
+    # Time buffer can be adjusted based on the amount of seconds of data needed
+    def updateBuffer(self):
         time_elapsed = (self.timer.elapsed() / 1000)
-
-        # Create a buffer of the last four seconds of data acquired
-        # Time buffer can be adjusted based on the amount of seconds of data needed
         if time_elapsed <= 4:
             self.q.put(self.chunk)
         else:
             self.q.get()
             self.q.put(self.chunk)
+
+    def updateData(self):
+        time_elapsed = (self.timer.elapsed() / 1000)
 
         # Update display based on seconds, minutes, or hours ran
         if time_elapsed < 60:  # If less than a minute has gone by
@@ -393,8 +395,9 @@ class runSignal:
 
         if self.chunk is not None:  # Update signal and signal data if pulled chunk is not None
             self.w.update(self.chunk)
+            self.updateBuffer()
             f, Pxx = self.get_spectrum(self.chunk)
-            self.updateData()
+
 
 
 if __name__ == '__main__':

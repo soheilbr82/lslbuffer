@@ -257,6 +257,7 @@ class LSLgui():
         for index, channel in enumerate(self.channels):
             if channel.isChecked():
                 self.show_channels.append(index)
+                break
         print(self.show_channels)
 
         # Checks to see if a current signal is being viewed

@@ -1,11 +1,15 @@
 import lslringbuffer_multithreaded
+import lslbuffer as lb
 from queue import Queue
 from threading import Thread
 import time
+import pylsl
 import pdb
-pdb.set_trace()
 eeg_sig = Queue()
-buffer = lslringbuffer_multithreaded.LSLRINGBUFFER(lsl_type='EEG', fs=250, buffer_duration=4.0, num_channels=33)
+streams = pylsl.resolve_streams(wait_time=1.0)
+lsl = lb.LSLInlet(streams[0])
+
+buffer = lslringbuffer_multithreaded.LSLRINGBUFFER(lsl_type='EEG', fs=250, buffer_duration=4.0, num_channels=32)
 t1 = Thread(target=buffer.run, args=(eeg_sig,))
 t1.start()
 time.sleep(1)
