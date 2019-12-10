@@ -43,14 +43,14 @@
    <widget class="QPushButton" name="visualizeButton">
     <property name="geometry">
      <rect>
-      <x>830</x>
+      <x>820</x>
       <y>90</y>
-      <width>281</width>
+      <width>131</width>
       <height>32</height>
      </rect>
     </property>
     <property name="text">
-     <string>Visualize</string>
+     <string>Visualize Timeseries</string>
     </property>
    </widget>
    <widget class="QScrollArea" name="channelView">
@@ -141,32 +141,6 @@
     </property>
     <layout class="QGridLayout" name="signalViewer"/>
    </widget>
-   <widget class="QPushButton" name="stopStream">
-    <property name="geometry">
-     <rect>
-      <x>590</x>
-      <y>690</y>
-      <width>391</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Stop Streaming</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="startStream">
-    <property name="geometry">
-     <rect>
-      <x>150</x>
-      <y>690</y>
-      <width>391</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Start Streaming</string>
-    </property>
-   </widget>
    <widget class="QPushButton" name="quitButton">
     <property name="geometry">
      <rect>
@@ -220,6 +194,41 @@
      </rect>
     </property>
     <layout class="QGridLayout" name="applyFilter"/>
+   </widget>
+   <widget class="QPushButton" name="visualizeTimeFreqButton">
+    <property name="geometry">
+     <rect>
+      <x>990</x>
+      <y>90</y>
+      <width>131</width>
+      <height>32</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Visualize Timefrequency</string>
+    </property>
+   </widget>
+   <widget class="QWidget" name="gridLayoutWidget_4">
+    <property name="geometry">
+     <rect>
+      <x>160</x>
+      <y>700</y>
+      <width>381</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <layout class="QGridLayout" name="resumeStream"/>
+   </widget>
+   <widget class="QWidget" name="gridLayoutWidget_5">
+    <property name="geometry">
+     <rect>
+      <x>590</x>
+      <y>700</y>
+      <width>381</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <layout class="QGridLayout" name="pauseStream"/>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
