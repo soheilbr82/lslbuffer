@@ -42,14 +42,13 @@ class SpectrumAnalyzer():
 
         self.stop_threads = False
         self.eeg_sig = Queue()
-        self.buffer = lslringbuffer_multithreaded.LSLRINGBUFFER(lsl_type='EEG', fs=250, buffer_duration=4.0, num_channels=32)
-        self.t1 = Thread(target=self.buffer.run, args=(lambda: self.stop_threads,self.eeg_sig,self.lsl,))
+        #self.buffer = lslringbuffer_multithreaded.LSLRINGBUFFER(lsl_type='EEG', fs=250, buffer_duration=4.0, num_channels=32)
+        self.t1 = Thread(target=self.lsl.run, args=(lambda: self.stop_threads,self.eeg_sig))
         self.t1.start()
         time.sleep(1)
         self.initUI()
     
     def resetChannel(self, channel):
-        print("Channel reset from %d to %d" % (self.channel, channel))
         self.channel = channel
 
     def readData(self):
