@@ -2,6 +2,7 @@
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 import lslbuffer as lb
+from lslringbuffer_multithreaded import LSLRINGBUFFER
 import PyQt5
 from PyQt5 import uic
 from PyQt5.QtWidgets import QApplication
@@ -10,7 +11,7 @@ import pylsl
 from TimeSeriesViewer import TimeSeriesSignal
 from TimeFrequencyViewer import SpectrumAnalyzer
 import sys
-
+import pdb
 
 class LSLgui():
     def __init__(self):
@@ -53,8 +54,15 @@ class LSLgui():
             print("Got all available streams. Starting streams now.....")
 
             for s in streams:
-                lsl = lb.LSLInlet(s, name=s.name())
-                self.lslobj[lsl.stream_name] = lsl
+                #lsl = lb.LSLInlet(s, name=s.name())
+                lsl_inlet = pylsl.StreamInlet(s, max_buflen=4)
+                lsl_inlet.open_stream()
+                lsl = LSLRINGBUFFER(lsl_type=lsl_inlet.info().type(), name=lsl_inlet.info().name(), inlet=lsl_inlet,\
+                        fs=lsl_inlet.info().nominal_srate(), buffer_duration=4.0, \
+                        num_channels=lsl_inlet.info().channel_count(), uid=lsl_inlet.info().uid(),\
+                        hostname=lsl_inlet.info().hostname(), channel_format='float64')
+                #print(str(lsl_inlet.channel_format))
+                self.lslobj[lsl_inlet.info().name()] = lsl
                 print()
 
     # Loads all of the available channels for the current stream under observation
@@ -98,18 +106,18 @@ class LSLgui():
 
         if self.available != False:
             for index, stream in enumerate(self.lslobj.keys()):
-                self.info = self.lslobj[stream].inlet.info()
+                info = self.lslobj[stream]#self.lslobj[stream].inlet.info()
                 # size = PyQt5.QtCore.QSize(100,50)
                 item = PyQt5.QtWidgets.QTreeWidgetItem(
-                    ["Name: %s - Type: %s" % (stream, self.lslobj[stream].stream_type)])
+                    ["Name: %s - Type: %s" % (stream, info.get_stream_type())])
                 channel_button = PyQt5.QtWidgets.QRadioButton("View %s?" % stream)
 
                 self.query.addTopLevelItem(item)
-                i1 = PyQt5.QtWidgets.QTreeWidgetItem(["Channel_Count: %d" % self.info.channel_count()])
-                i2 = PyQt5.QtWidgets.QTreeWidgetItem(["Nominal_srate: %d" % self.info.nominal_srate()])
-                i3 = PyQt5.QtWidgets.QTreeWidgetItem(["Channel_format: %s" % self.info.channel_format()])
-                i4 = PyQt5.QtWidgets.QTreeWidgetItem(["uid: %s" % self.info.uid()])
-                i5 = PyQt5.QtWidgets.QTreeWidgetItem(["Hostname: %s" % self.info.hostname()])
+                i1 = PyQt5.QtWidgets.QTreeWidgetItem(["Channel_Count: %d" % info.get_channel_count()])
+                i2 = PyQt5.QtWidgets.QTreeWidgetItem(["Nominal_srate: %d" % info.get_nominal_srate()])
+                i3 = PyQt5.QtWidgets.QTreeWidgetItem(["Channel_format: %s" % info.get_channel_format()])
+                i4 = PyQt5.QtWidgets.QTreeWidgetItem(["uid: %s" % info.get_uid()])
+                i5 = PyQt5.QtWidgets.QTreeWidgetItem(["Hostname: %s" % info.get_hostname()])
 
                 item.addChild(i1)
                 item.addChild(i2)
@@ -219,6 +227,8 @@ class LSLgui():
     def showTSStream(self):
         
         self.show_channels = []
+        self.getStreamName()
+        lsl_inlet = self.lslobj[self.current_stream_name]
 
         # Checks to see if the 'All Channels' button is checked
         if self.view.itemAt(0).widget().isChecked():
@@ -238,8 +248,7 @@ class LSLgui():
                 #if self.graph.w.isActive():
                     print("Active")
                     self.graph.stop()
-                    self.graph.resetViewer(self.info.nominal_srate(), self.lslobj[self.current_stream_name].get_channels(),
-                                        self.show_channels, self.lslobj[self.current_stream_name])
+                    self.graph.resetViewer(self.show_channels)
                     self.graph.setTimer()
             elif self.streamView=="time_frequency":
                 self.graph.close()
@@ -255,27 +264,24 @@ class LSLgui():
             if self.filterOptions.isEmpty():
                 self.loadFilters()
 
-            self.getStreamName()
-            self.info = self.lslobj[self.current_stream_name].inlet.info()
-            self.graph = TimeSeriesSignal(self.info.nominal_srate(), self.lslobj[self.current_stream_name].get_channels(),
-                                   self.show_channels, self.lslobj[self.current_stream_name], self.streamLabel)
-            self.graph.createTimer()
+        
+            self.graph = TimeSeriesSignal(lsl_inlet, self.show_channels, self.streamLabel)
             self.graph.setViewer(self.signalViewer, self.filters, self.band)
-            self.graph.setTimer()
             self.applyFilterBtn.clicked.connect(self.applyFilters)
 
     # Shows the signal stream of the selected channels
     def showTFStream(self):
+        self.getStreamName()
+        lsl_inlet = self.lslobj[self.current_stream_name]
         if self.graph is not None:
             if self.streamView=="time_frequency":
                 for index, channel in enumerate(self.channels):
-                    if channel.isChecked():
-                        self.show_channels=index
+                    if channel.checkState() == 2:
+                        self.show_ch=index
                         break
                 self.graph.resetChannel(self.show_ch)
             elif self.streamView=="time_series":
                 #
-                # print("Active")
                 self.graph.stop()
                 self.graph.close()
                 self.clearViewer()
@@ -289,17 +295,14 @@ class LSLgui():
             if self.pauseView.isEmpty() and self.resumeView.isEmpty():
                 self.loadPauseResume()
 
-            if self.filterOptions.isEmpty():
-                self.loadFilters()
-
-            self.getStreamName()
+            #self.getStreamName()
             for index, channel in enumerate(self.channels):
                 if channel.isChecked():
                     self.show_ch=index
-                    print(self.show_ch)
                     break
 
-            self.graph = SpectrumAnalyzer(self.lslobj[self.current_stream_name], self.show_ch, self.signalViewer)
+
+            self.graph = SpectrumAnalyzer(lsl_inlet, self.show_ch, self.signalViewer)
             self.visualTimeFreqButton.clicked.connect(self.showTFStream)
 
     # Starts/resumes the current visual of the signal viewer
@@ -319,7 +322,8 @@ class LSLgui():
             self.graph.close()   
         for key in self.lslobj.keys():
             if self.lslobj[key]:
-                self.lslobj[key].disconnect()
+                #self.lslobj[key].disconnect()
+                del self.lslobj[key]
                 self.lslobj[key] = None
         self.window.close()
         self.app.quit()
