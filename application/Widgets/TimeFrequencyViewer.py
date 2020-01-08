@@ -115,6 +115,7 @@ class SpectrumAnalyzer(QWidget):
         return f.tolist(), (np.absolute(Pxx)).tolist()
 
 
+    # Computing power spectral density using Welch's method
     def get_spectral_density(self,data):
         win = 4 * self.fs
         freqs, psd = signal.welch(data, self.fs, nperseg=win)
