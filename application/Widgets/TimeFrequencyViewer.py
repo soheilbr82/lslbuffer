@@ -2,6 +2,7 @@ from queue import Queue
 from threading import Thread
 import time
 import pdb
+from scipy import signal
 
 import pyqtgraph as pg
 
@@ -34,6 +35,9 @@ class SpectrumAnalyzer(QWidget):
 
         self.lsl=lsl
         self.channel = channel
+        self.fs = self.lsl.get_nominal_srate()
+
+        self.BUFFERSIZE=2**12 #1024 is a good buffer size
 
         self.stop_threads = False
         self.eeg_sig = Queue()
@@ -101,7 +105,7 @@ class SpectrumAnalyzer(QWidget):
         self.close()
 
     def get_spectrum(self, data):
-        T = 1.0 / self.lsl.get_nominal_srate()
+        T = 1.0 / self.fs
         N = data.shape[0]
         Pxx = (1. / N) * np.fft.fft(data)
         f = np.fft.fftfreq(N, T)
@@ -109,6 +113,14 @@ class SpectrumAnalyzer(QWidget):
         f = np.fft.fftshift(f)
 
         return f.tolist(), (np.absolute(Pxx)).tolist()
+
+
+    def get_spectral_density(self,data):
+        win = 4 * self.fs
+        freqs, psd = signal.welch(data, self.fs, nperseg=win)
+        return freqs, psd
+
+
 
     # Resumes the signal viewer in real-time
     def start(self):
@@ -134,7 +146,7 @@ class SpectrumAnalyzer(QWidget):
         except IOError:
             pass
 
-        f, Pxx = self.get_spectrum(data)
+        f, Pxx = self.get_spectral_density(data)
         self.specItem.plot(x=f, y=Pxx, clear=True)
 
 
