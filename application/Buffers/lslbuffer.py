@@ -11,9 +11,9 @@ import time
 import socket
 import xml.etree.ElementTree as ET
 
-
 logger = logging.getLogger(__name__)
 logger.info('Logger started.')
+
 
 class LSLBUFFER():
     """lab streaming layer (lsl) with varied buffer size and time-corrected samples.
@@ -23,19 +23,19 @@ class LSLBUFFER():
     https://code.google.com/p/labstreaminglayer/
     Examples
     --------
-    >>> lslobj = LSLBUFFER(stream_type='EEG', buffer_size=4.0)
-    >>> lslobj.configure()
-    >>> lslobj.start()
-    >>> while True:
-    ...     data, marker = lslobj.get_data()
-    ...     # do something with data and/or break the loop
-    >>> obj.stop()
+        >>> lslobj = LSLBUFFER(stream_type='EEG', buffer_size=4.0)
+        >>> lslobj.configure()
+        >>> lslobj.start()
+        >>> while True:
+        ...     data, marker = lslobj.get_data()
+        ...     # do something with data and/or break the loop
+        >>> obj.stop()
     """
-    
+
     def __init__(self, stream_type='EEG', buffer_size=4.0):
-        
-        self.stream_type = stream_type # stream type
-        self.buffer_size = buffer_size # Buffer size (second)
+
+        self.stream_type = stream_type  # stream type
+        self.buffer_size = buffer_size  # Buffer size (second)
         self.eeg_stream_name = None
 
     def configure(self, **kwargs):
@@ -43,27 +43,26 @@ class LSLBUFFER():
         This method finds running lsl streams and picks the first `EEG`
         and `Markers` streams.
         """
-        
-        
+
         # open EEG lsl stream
         logger.debug('Opening EEG stream...')
         eeg_streams = pylsl.resolve_byprop('type', 'EEG', timeout=2)
         try:
             if len(eeg_streams) == 0:
                 self.bool_eeg_streams = False
-                #raise RuntimeError("Can't find EEG stream")
+                # raise RuntimeError("Can't find EEG stream")
             if len(eeg_streams) > 1:
                 self.bool_eeg_streams = True
                 logger.warning('Number of EEG streams is > 0, picking the first one.')
         except RuntimeError as x:
             print("Can't find EEG stream")
-            
+
         self.eeg_stream_name = pylsl.StreamInfo.name(eeg_streams[0])
         print(self.eeg_stream_name + " is found!")
         self.lsl_inlet = pylsl.StreamInlet(eeg_streams[0])
         # lsl time sample correction
         self.lsl_inlet.time_correction()
-        
+
         # open marker lsl stream
         logger.debug('Opening Marker stream...')
         # TODO: should add a timeout here in case there is no marker
@@ -73,7 +72,7 @@ class LSLBUFFER():
             self.bool_marker_streams = True
             if len(marker_streams) > 1:
                 logger.warning('Number of Marker streams is > 0, picking the first one.')
-            
+
             marker_stream_name = pylsl.StreamInfo.name(marker_streams[0])
             print(marker_stream_name + " is found!")
             self.lsl_marker_inlet = pylsl.StreamInlet(marker_streams[0])
@@ -82,16 +81,16 @@ class LSLBUFFER():
         else:
             self.bool_marker_streams = False
             print("Can't find Markers stream")
-        
+
         # Parse channel name and sampling frequency
         info = self.lsl_inlet.info()
- #       self.fs = pylsl.StreamInfo.nominal_srate(eeg_streams[0])
-        
+        #       self.fs = pylsl.StreamInfo.nominal_srate(eeg_streams[0])
+
         self.n_channels = info.channel_count()
         self.channels = ['Ch %i' % i for i in range(self.n_channels)]
         self.fs = info.nominal_srate()
         logger.debug('Initializing time correction...')
-        
+
         # lsl buffer defined
         self.max_samples = int(self.fs * self.buffer_size)
         logger.debug('Configuration done.')
@@ -101,7 +100,7 @@ class LSLBUFFER():
         """
         logger.debug('Opening lsl streams.')
         self.lsl_inlet.open_stream()
-        
+
         if self.bool_marker_streams:
             self.lsl_marker_inlet.open_stream()
 
@@ -110,7 +109,7 @@ class LSLBUFFER():
         """
         logger.debug('Closing lsl streams.')
         self.lsl_inlet.close_stream()
-        
+
         if self.bool_marker_streams:
             self.lsl_marker_inlet.close_stream()
 
@@ -121,7 +120,7 @@ class LSLBUFFER():
         chunk, markers: Markers is time in ms since relative to the
         first sample of that block.
         """
-        
+
         tc_s = self.lsl_inlet.time_correction()
         if self.bool_marker_streams:
             tc_m = self.lsl_marker_inlet.time_correction()
@@ -129,23 +128,22 @@ class LSLBUFFER():
             # flatten the output of the lsl markers, which has the form
             # [[m1], [m2]], and convert to string
             markers = [str(i) for sublist in markers for i in sublist]
-            
+
             # block until we actually have data
             samples, timestamps = self.lsl_inlet.pull_chunk(timeout=pylsl.FOREVER, max_samples=self.max_samples)
             samples = np.array(samples).reshape(-1, self.n_channels)
-            
+
             t0 = timestamps[0] + tc_s
             m_timestamps = [(i + tc_m - t0) * 1000 for i in m_timestamps]
 
             return samples, zip(m_timestamps, markers)
-        
+
         else:
             # block until we actually have data
             samples, timestamps = self.lsl_inlet.pull_chunk(timeout=pylsl.FOREVER, max_samples=self.max_samples)
             samples = np.array(samples).reshape(-1, self.n_channels)
 
             return samples
-            
 
     def get_channels(self):
         """Get channel names.
@@ -158,23 +156,26 @@ class LSLBUFFER():
         return self.fs
 
 
-global LSL_STREAM_NAMES 
-global LSL_RESOLVE_TIMEOUT 
-
+global LSL_STREAM_NAMES
+# global LSL_RESOLVE_TIMEOUT
+#
 LSL_STREAM_NAMES = ['AudioCaptureWin', 'NVX136_Data', 'EEG']
-LSL_RESOLVE_TIMEOUT = 10
+# LSL_RESOLVE_TIMEOUT = 10
+#
+#
+# class FixedStreamInfo(StreamInfo):
+#     def as_xml(self):
+#         return lib.lsl_get_xml(self.obj).decode('utf-8', 'ignore')  # add ignore
+#
+#
+# class FixedStreamInlet(StreamInlet):
+#     def info(self, timeout=FOREVER):
+#         errcode = c_int()
+#         result = lib.lsl_get_fullinfo(self.obj, c_double(timeout),
+#                                       byref(errcode))
+#         handle_error(errcode)
+#         return FixedStreamInfo(handle=result)  # StreamInfo(handle=result)
 
-class FixedStreamInfo(StreamInfo):
-    def as_xml(self):
-        return lib.lsl_get_xml(self.obj).decode('utf-8', 'ignore') # add ignore
-
-class FixedStreamInlet(StreamInlet):
-    def info(self, timeout=FOREVER):
-        errcode = c_int()
-        result = lib.lsl_get_fullinfo(self.obj, c_double(timeout),
-                                      byref(errcode))
-        handle_error(errcode)
-        return FixedStreamInfo(handle=result) # StreamInfo(handle=result)
 
 class LSLInlet:
     def __init__(self, stream, name=LSL_STREAM_NAMES[2], only_this_host=False):
@@ -187,15 +188,15 @@ class LSLInlet:
         self.inlet = None
         self.dtype = 'float64'
         self.stream_name = pylsl.StreamInfo.name(stream)
-        #self.fs = pylsl.StreamInfo.nominal_srate(stream)
+        # self.fs = pylsl.StreamInfo.nominal_srate(stream)
 
         print("Trying to connect to {} LSL stream.....".format(self.stream_name))
 
         try:
-            #if len(streams) > 0:
+            # if len(streams) > 0:
             self.inlet = pylsl.StreamInlet(stream, max_buflen=4)
 
-            #def start(self):
+            # def start(self):
             """Open the lsl inlets.
             """
             logger.debug('Opening lsl streams.')
@@ -205,7 +206,7 @@ class LSLInlet:
             self.n_channels = self.inlet.info().channel_count()
             self.channels = ['Ch %i' % i for i in range(self.n_channels)]
 
-            #else:
+            # else:
             #    raise ConnectionError('Cannot connect to "{}" LSL stream'.format(name))
         except ConnectionError as e:
             print('Cannot connect to "{}" LSL stream'.format(name))
@@ -242,7 +243,7 @@ class LSLInlet:
 
     def get_channels_labels(self):
         for t in range(3):
-            time.sleep(0.5*(t+1))
+            time.sleep(0.5 * (t + 1))
             try:
                 # print('wow') TODO too many repetitions
                 rt = ET.fromstring(self.info_as_xml())
@@ -252,8 +253,8 @@ class LSLInlet:
                           for ch in channels_tree]
                 return labels
             except OSError:
-                print('OSError during reading channels names', t+1)
-        return ['channel'+str(n+1) for n in range(self.get_n_channels())]
+                print('OSError during reading channels names', t + 1)
+        return ['channel' + str(n + 1) for n in range(self.get_n_channels())]
 
     def disconnect(self):
         del self.inlet

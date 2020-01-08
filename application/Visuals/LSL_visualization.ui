@@ -27,82 +27,18 @@
      <string>Query</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_2">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>130</y>
-      <width>181</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Available Streams/Markers</string>
-    </property>
-   </widget>
    <widget class="QPushButton" name="visualizeButton">
     <property name="geometry">
      <rect>
-      <x>820</x>
+      <x>810</x>
       <y>90</y>
-      <width>131</width>
+      <width>151</width>
       <height>32</height>
      </rect>
     </property>
     <property name="text">
      <string>Visualize Timeseries</string>
     </property>
-   </widget>
-   <widget class="QScrollArea" name="channelView">
-    <property name="geometry">
-     <rect>
-      <x>820</x>
-      <y>150</y>
-      <width>301</width>
-      <height>181</height>
-     </rect>
-    </property>
-    <property name="widgetResizable">
-     <bool>true</bool>
-    </property>
-    <widget class="QWidget" name="scrollAreaWidgetContents">
-     <property name="geometry">
-      <rect>
-       <x>0</x>
-       <y>0</y>
-       <width>299</width>
-       <height>179</height>
-      </rect>
-     </property>
-    </widget>
-   </widget>
-   <widget class="QLabel" name="label_3">
-    <property name="geometry">
-     <rect>
-      <x>820</x>
-      <y>130</y>
-      <width>181</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Available Channels</string>
-    </property>
-   </widget>
-   <widget class="QTreeWidget" name="streamMetaData">
-    <property name="geometry">
-     <rect>
-      <x>30</x>
-      <y>150</y>
-      <width>761</width>
-      <height>181</height>
-     </rect>
-    </property>
-    <column>
-     <property name="text">
-      <string notr="true">1</string>
-     </property>
-    </column>
    </widget>
    <widget class="QLabel" name="UTKlogo">
     <property name="geometry">
@@ -139,20 +75,7 @@
       <height>291</height>
      </rect>
     </property>
-    <layout class="QGridLayout" name="signalViewer"/>
-   </widget>
-   <widget class="QPushButton" name="quitButton">
-    <property name="geometry">
-     <rect>
-      <x>1000</x>
-      <y>1</y>
-      <width>141</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Quit</string>
-    </property>
+    <layout class="QGridLayout" name="TimeSeriesViewer"/>
    </widget>
    <widget class="QWidget" name="verticalLayoutWidget">
     <property name="geometry">
@@ -173,23 +96,12 @@
      </item>
     </layout>
    </widget>
-   <widget class="QWidget" name="gridLayoutWidget_2">
-    <property name="geometry">
-     <rect>
-      <x>820</x>
-      <y>340</y>
-      <width>301</width>
-      <height>251</height>
-     </rect>
-    </property>
-    <layout class="QGridLayout" name="filtersBox"/>
-   </widget>
    <widget class="QWidget" name="gridLayoutWidget_3">
     <property name="geometry">
      <rect>
-      <x>819</x>
+      <x>929</x>
       <y>600</y>
-      <width>301</width>
+      <width>191</width>
       <height>31</height>
      </rect>
     </property>
@@ -198,9 +110,9 @@
    <widget class="QPushButton" name="visualizeTimeFreqButton">
     <property name="geometry">
      <rect>
-      <x>990</x>
+      <x>960</x>
       <y>90</y>
-      <width>131</width>
+      <width>171</width>
       <height>32</height>
      </rect>
     </property>
@@ -217,7 +129,7 @@
       <height>41</height>
      </rect>
     </property>
-    <layout class="QGridLayout" name="resumeStream"/>
+    <layout class="QGridLayout" name="resumeView"/>
    </widget>
    <widget class="QWidget" name="gridLayoutWidget_5">
     <property name="geometry">
@@ -228,7 +140,75 @@
       <height>41</height>
      </rect>
     </property>
-    <layout class="QGridLayout" name="pauseStream"/>
+    <layout class="QGridLayout" name="pauseView"/>
+   </widget>
+   <widget class="QScrollArea" name="channelLayout">
+    <property name="geometry">
+     <rect>
+      <x>820</x>
+      <y>150</y>
+      <width>301</width>
+      <height>181</height>
+     </rect>
+    </property>
+    <property name="widgetResizable">
+     <bool>true</bool>
+    </property>
+    <widget class="QWidget" name="scrollAreaWidgetContents">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>299</width>
+       <height>179</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QScrollArea" name="queryStream">
+    <property name="geometry">
+     <rect>
+      <x>29</x>
+      <y>150</y>
+      <width>761</width>
+      <height>181</height>
+     </rect>
+    </property>
+    <property name="widgetResizable">
+     <bool>true</bool>
+    </property>
+    <widget class="QWidget" name="scrollAreaWidgetContents_2">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>759</width>
+       <height>179</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="gridLayoutWidget_7">
+    <property name="geometry">
+     <rect>
+      <x>210</x>
+      <y>340</y>
+      <width>721</width>
+      <height>291</height>
+     </rect>
+    </property>
+    <layout class="QGridLayout" name="TimeFrequencyViewer"/>
+   </widget>
+   <widget class="QWidget" name="verticalLayoutWidget_2">
+    <property name="geometry">
+     <rect>
+      <x>929</x>
+      <y>340</y>
+      <width>191</width>
+      <height>251</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="filterLayout"/>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">

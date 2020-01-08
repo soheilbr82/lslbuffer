@@ -38,7 +38,6 @@ class LSLRINGBUFFER:
         buffer_data = RingBuffer(capacity=buffer_length, dtype=(float, self.num_channels))
 
         # create a new inlet to read from the stream
-        #inlet = lsl 
         # Send data to the buffer
         while True:
             
@@ -70,6 +69,9 @@ class LSLRINGBUFFER:
         # return first n_channels channels or None if empty chunk
         return (chunk, timestamp) if chunk.shape[0] > 0 else (None, None)
 
+    def get_stream_name(self):
+        return self.stream_name
+
     def get_stream_type(self):
         return self.lsl_type
 
@@ -90,6 +92,11 @@ class LSLRINGBUFFER:
 
     def get_channel_format(self):
         return self.channel_format
+
+    def get_lsl_info(self):
+        return {"stream_name": self.stream_name, "sampling_rate": self.fs, "number_of_channels": self.num_channels, \
+                "channels": self.channels, "channel_format": self.channel_format, "uid": self.uid, "hostname": self.hostname,\
+                "buffer_duration": self.buffer_duration, "stream_type": self.lsl_type}
 
 
 if __name__ == "__main__":

@@ -1,19 +1,14 @@
-import lslringbuffer_multithreaded
-import lslbuffer as lb
 from queue import Queue
 from threading import Thread
 import time
-import pylsl
 import pdb
 
-import struct
-import math
-import sys
-import numpy as np
-import IPython as ipy
-
 import pyqtgraph as pg
-from pyqtgraph.Qt import QtGui, QtCore
+
+import numpy as np
+from PyQt5.QtWidgets import*
+from PyQt5.QtCore import*
+from PyQt5.QtGui import*
 
 # Audio Format (check Audio MIDI Setup if on Mac)
 # FORMAT = pyaudio.paInt16
@@ -33,29 +28,31 @@ INPUT_FRAMES_PER_BLOCK = int(RATE * INPUT_BLOCK_TIME)
 LR = "l"
 
 
-class SpectrumAnalyzer():
-    def __init__(self, lsl, channel, viewer):
+class SpectrumAnalyzer(QWidget):
+    def __init__(self, lsl, channel):
+        super(SpectrumAnalyzer, self).__init__()
 
-        self.timeFrequencyViewer = viewer
         self.lsl=lsl
         self.channel = channel
 
         self.stop_threads = False
         self.eeg_sig = Queue()
-        #self.buffer = lslringbuffer_multithreaded.LSLRINGBUFFER(lsl_type='EEG', fs=250, buffer_duration=4.0, num_channels=32)
         self.t1 = Thread(target=self.lsl.run, args=(lambda: self.stop_threads,self.eeg_sig))
         self.t1.start()
         time.sleep(1)
+
         self.initUI()
+
     
     def resetChannel(self, channel):
-        self.channel = channel
+        if channel != self.channel:
+            self.channel = channel
+
 
     def readData(self):
         sample = self.eeg_sig.get()
         shorts = sample[:, self.channel]
 
-        #print(sample.shape)
         if CHANNELS == 1:
             return np.array(shorts)
         else:
@@ -65,21 +62,17 @@ class SpectrumAnalyzer():
                 return np.array(l)
             else:
                 return np.array(r)
+                
 
     def createTimer(self):
-        self.main_timer = QtCore.QTimer()
-        self.main_timer.timeout.connect(self.update)
+        self.main_timer = QTimer()
+        self.main_timer.timeout.connect(self.main_loop)
         self.main_timer.start(30)
 
-    def initUI(self):
-        self.mainWindow = QtGui.QMainWindow()
-        self.mainWindow.setWindowTitle("Spectrum Analyzer")
-        self.mainWindow.resize(800, 300)
-        self.centralWid = QtGui.QWidget()
-        self.mainWindow.setCentralWidget(self.centralWid)
-        self.lay = QtGui.QVBoxLayout()
-        self.centralWid.setLayout(self.lay)
 
+    def initUI(self):
+        self.lay = QVBoxLayout()
+        self.setLayout(self.lay)
         self.specWid = pg.PlotWidget(name="spectrum")
         self.specItem = self.specWid.getPlotItem()
         self.specItem.setMouseEnabled(y=False)
@@ -90,30 +83,29 @@ class SpectrumAnalyzer():
         self.specAxis.setLabel("Frequency [Hz]")
         self.lay.addWidget(self.specWid)
 
-        self.timeFrequencyViewer.addWidget(self.mainWindow)
         self.createTimer()
 
-        self.mainWindow.show()
+        self.show()
 
     #Kills thread safely
     def kill_thread(self):
-        print("Killing thread")
+        print("Killing thread....")
         self.stop_threads=True
         self.t1.join() 
-        print('thread killed') 
+        print('Thread killed.') 
 
     #Kills any active threads and open windows
-    def close(self):
+    def close_window(self):
         self.kill_thread()
         self.main_timer.stop()
-        self.mainWindow.close()
+        self.close()
 
     def get_spectrum(self, data):
-        T = 1.0 / RATE
+        T = 1.0 / self.lsl.get_nominal_srate()
         N = data.shape[0]
         Pxx = (1. / N) * np.fft.fft(data)
         f = np.fft.fftfreq(N, T)
-        Pxx = np.fft.fftshift(Pxx)
+        Pxx = np.fft.fftshift(Pxx).ravel()
         f = np.fft.fftshift(f)
 
         return f.tolist(), (np.absolute(Pxx)).tolist()
@@ -136,11 +128,12 @@ class SpectrumAnalyzer():
         else:
             print("timer is inactive")
 
-    def update(self):
+    def main_loop(self):
         try:
             data = self.readData()
         except IOError:
-            pass 
+            pass
+
         f, Pxx = self.get_spectrum(data)
         self.specItem.plot(x=f, y=Pxx, clear=True)
 
