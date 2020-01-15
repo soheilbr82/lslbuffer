@@ -6,11 +6,11 @@ from PyQt5.QtGui import*
 import pyqtgraph as pg
 
 #Self created modules
-from Widgets.Logo import UTKLogo
-from Widgets.Error import ErrorBox
-from Widgets.TimeFrequencyViewer import SpectrumAnalyzer
-from Widgets.TimeSeriesViewer import TimeSeriesSignal
-from Buffers.lslringbuffer_multithreaded import LSLRINGBUFFER
+from application.Widgets.Logo import UTKLogo
+from application.Widgets.Error import ErrorBox
+from application.Widgets.TimeFrequencyViewer import SpectrumAnalyzer
+from application.Widgets.TimeSeriesViewer import TimeSeriesSignal
+from application.Buffers.lslringbuffer_multithreaded import LSLRINGBUFFER
 
 #Python library modules
 import pylsl
@@ -20,7 +20,7 @@ class LSLgui(QMainWindow):
     def __init__(self, *args, **kwargs):
         super(LSLgui, self).__init__(*args, **kwargs)
 
-        uic.loadUi("Revisions/Visuals/LSL_visualization.ui", self) # Load the .ui file
+        uic.loadUi("application/Visuals/LSL_visualization.ui", self) # Load the .ui file
         self.setWindowTitle('LSL Real-Time Analysis')   
         self.setMaximumSize(1150,1000) 
 
@@ -91,8 +91,6 @@ class LSLgui(QMainWindow):
 
 
     def clearLayout(self, layout):
-        #for i in reversed(range(layout.count())): 
-        #    layout.itemAt(i).widget().setParent(None)
         for cnt in reversed(range(layout.count())):
         # takeAt does both the jobs of itemAt and removeWidget
         # namely it removes an item and returns it
@@ -100,10 +98,6 @@ class LSLgui(QMainWindow):
             widget.setVisible(False)
             widget.setParent(None)
             layout.removeWidget(widget)
-
-            #if widget is not None: 
-                # widget will be None if the item is a layout
-            #    widget.deleteLater()
 
     def stream_clicked(self):
         self.currentStreamName = self.streamButtonGroup.checkedButton().objectName()
@@ -119,7 +113,6 @@ class LSLgui(QMainWindow):
 
 
         # Resets signal viewer object for the new stream to be viewed
-        #self.graph = None
         self.channelButtonGroup = QButtonGroup()
         self.channelButtonGroup.setExclusive(False)
 
@@ -141,7 +134,6 @@ class LSLgui(QMainWindow):
             self.channelButtonGroup.addButton(channelBtn, channelID)
             self.channelLayout.addWidget(channelBtn)
 
-        #self.channelButtonGroup.buttonClicked['QAbstractButton *'].connect(self.selectChannel)
         self.channelButtonGroup.buttonClicked['int'].connect(self.selectChannel)
 
 
@@ -150,8 +142,6 @@ class LSLgui(QMainWindow):
 
     def selectChannel(self, button_or_id):
         channelBtn = self.channelButtonGroup.checkedButton()
-        #if channelBtn:
-            #print(channelBtn.text())
 
         if isinstance(button_or_id, QAbstractButton):
             print('"{}" was clicked'.format(button_or_id.text()))
@@ -241,11 +231,11 @@ class LSLgui(QMainWindow):
 
 
     def applyFilters(self):
+        #Checks to see if any of the filters have been selected
         if any(self.filters):
-
             for Filter in self.filters.keys():
+
                 if self.filters[Filter] == True:
-                    print(Filter + " Applied")
                     self.graph.addFilter(Filter)
                 else: 
                     self.graph.removeFilter(Filter)
@@ -254,72 +244,104 @@ class LSLgui(QMainWindow):
 
 
     def showTSStream(self):
+
+        #Check is stream have been queried and at least ONE stream is selected to vizualize
         if not self.lslobj:
             self.displayError("Please have ONE stream available to view.")
 
+        #Check to see if at least ONE channel has been chosen to visualize from the current stream
         elif len(self.showChannels) == 0:
             self.displayError("Please select only ONE channel to view.")
 
         else:
+
+            #Check is Time Frequency is in use
+            #If it is, clear the layout to ensure clear visibility of the Time Series Graph
             if not self.TimeFrequencyLayout.isEmpty():
                     self.clearLayout(self.TimeFrequencyLayout)
                     self.graph.close_window()
                     self.graph = None
 
+            #Check is pause/resume buttons have been displayed from a previous graph
+            #If they are not displayed, create and display them
             if self.pauseView.isEmpty() and self.resumeView.isEmpty():
                     self.loadPauseResume()
 
+            #Check to see if the filter options are available to view from a previous graph
+            #If they are not displayed, create and display them
             if self.filterLayout1.isEmpty():
                 self.loadFilters()
             
+            #Obtain the current stream inlet to pass into the Signal Viewer
             lsl_inlet = self.lslobj[self.currentStreamName]
             fs = lsl_inlet.get_nominal_srate()
             channels = lsl_inlet.get_channels()
-            view_channels = [channel for channel in self.showChannels]#
+            view_channels = [channel for channel in self.showChannels]
 
+            #If another Time Series graph is being visualized
+            #Remove the current graph and replace with a new one with a different set of arguments to use
             if not self.TimeSeriesLayout.isEmpty():
                 self.graph.close()
                 self.TimeSeriesViewer.removeWidget(self.graph)
 
             self.graph = TimeSeriesSignal(fs, channels, view_channels, lsl_inlet=lsl_inlet)
             self.TimeSeriesViewer.addWidget(self.graph)
-            self.streamDataLayout.addWidget(self.graph.get_label())
+            self.streamDataLayout.addWidget(self.graph.getMetaData())
             
 
 
     def showTFStream(self):
+        #Check is stream have been queried and at least ONE stream is selected to vizualize
         if not self.lslobj:
             self.displayError("Please have ONE stream available to view.")
 
+        #Check to see that only ONE channel has been chosen to visualize from the current stream
         elif len(self.showChannels) > 1 or len(self.showChannels) == 0:
             self.displayError("Please select only ONE channel to view.")
             
         else:
 
+            #Check is Time Series is in use
+            #If it is, clear the layout to ensure clear visibility of the Time Frequency Graph
             if not self.TimeSeriesLayout.isEmpty():
-                    self.graph.close_window()
-                    self.graph = None
-                    self.clearLayout(self.TimeSeriesLayout)
+                self.graph.close_window()
+                self.graph = None
+                self.clearLayout(self.TimeSeriesLayout)
 
+            #Check to see if filter options are available
+            #If they are, remove them since the Time Frequency graph does not require the use of filters
             if not self.filterLayout1.isEmpty():
-                    self.clearLayout(self.filterLayout1)
-                    self.clearLayout(self.filterLayout2)
-                    self.clearLayout(self.applyFilterLayout)
+                self.clearLayout(self.filterLayout1)
+                self.clearLayout(self.filterLayout2)
+                self.clearLayout(self.applyFilterLayout)
+            
+            #Check to see if the meta data from the Time Series graph is still visible
+            #If it is, remove the label and clear the layout
+            if not self.streamDataLayout.isEmpty():
+                self.clearLayout(self.streamDataLayout)
 
+            #Check is pause/resume buttons have been displayed from a previous graph
+            #If they are not displayed, create and display them
             if self.pauseView.isEmpty() and self.resumeView.isEmpty():
                     self.loadPauseResume()
 
+            #If this is the first time the Time Frequency graph is being used
+            #Get the current stream inlet and the selected channel to view
+            #Pass these in as arguments to create a SpectrumAnalyzer object
             if self.TimeFrequencyLayout.isEmpty():
                 lsl_inlet = self.lslobj[self.currentStreamName]
             
                 view_channel = self.showChannels[0]
                 self.graph = SpectrumAnalyzer(lsl_inlet, view_channel)
                 self.TimeFrequencyViewer.addWidget(self.graph)
+
+            #Resets the channel currently in the graph with the newly selected channel
             else:
                 view_channel = self.showChannels[0]
                 self.graph.resetChannel(view_channel)
             
 
+    #Displays an error message
     def displayError(self, error_message):
         errorBox = ErrorBox(message = error_message)
         errorBox.exec_()
@@ -351,7 +373,7 @@ class LSLgui(QMainWindow):
 
         logo = self.findChild(QLabel, 'UTKlogo')
         logo.setAlignment(Qt.AlignCenter)
-        image = QPixmap("/Users/jdunkley98/Downloads/MABE-Research/lslbuffer/viz/UTKlogo.png")
+        image = QPixmap("application/Visuals/UTKlogo.png")
         logo.setPixmap(image)
 
         label = self.findChild(QLabel, 'NBL')

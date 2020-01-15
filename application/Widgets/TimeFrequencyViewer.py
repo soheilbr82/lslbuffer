@@ -117,10 +117,12 @@ class SpectrumAnalyzer(QWidget):
 
     # Computing power spectral density using Welch's method
     def get_spectral_density(self,data):
-        win = 4 * self.fs
-        freqs, psd = signal.welch(data, self.fs, nperseg=win)
-        return freqs, psd
+        if(len(data) >= 2*self.fs):
+            win = 2 * self.fs
+            freqs, psd = signal.welch(data, self.fs, nperseg=win)
+            return freqs, psd
 
+        return (None, None)
 
 
     # Resumes the signal viewer in real-time
@@ -147,8 +149,11 @@ class SpectrumAnalyzer(QWidget):
         except IOError:
             pass
 
+        print(len(data))
         f, Pxx = self.get_spectral_density(data)
-        self.specItem.plot(x=f, y=Pxx, clear=True)
+
+        if f is not None and Pxx is not None:
+            self.specItem.plot(x=f, y=Pxx, clear=True)
 
 
 if __name__ == '__main__':

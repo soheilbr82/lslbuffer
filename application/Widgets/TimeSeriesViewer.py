@@ -1,25 +1,27 @@
-from Widgets.SignalViewer import RawSignalViewer
 from queue import Queue
 from PyQt5 import QtCore, QtGui, QtWidgets
-from Widgets.SignalFilters import NotchFilter, ButterFilter
 from threading import Thread
+
 import time
 import pylsl
-from Buffers.lslringbuffer_multithreaded import LSLRINGBUFFER
+
+from application.Widgets.SignalViewer import RawSignalViewer
+from application.Widgets.SignalFilters import NotchFilter, ButterFilter
+from application.Buffers.lslringbuffer_multithreaded import LSLRINGBUFFER
+
 import sys
 import pdb
 
 class TimeSeriesSignal(RawSignalViewer):
     def __init__(self, fs, num_channels, showChannels, applyFilter=None, lsl_inlet=None):#lsl, view_channels=None, label1=None):
         super(TimeSeriesSignal, self).__init__(fs, num_channels, showChannels)
+
         self.fs = fs
         self.num_channels = num_channels
         self.showChannels = showChannels
-        self.filter = applyFilter
         self.lsl_inlet = lsl_inlet
-        self.label1 = QtWidgets.QLabel()
 
-        #self.isFilterApplied = False
+        self.filter = applyFilter
         self.Filters = {"Notch" : False, "Butter" : False}
        
         self.initUI()
@@ -36,8 +38,10 @@ class TimeSeriesSignal(RawSignalViewer):
 
 
     def initUI(self):
+        self.label1 = QtWidgets.QLabel()
         self.createTimer()
         self.show()
+        
 
     def initFilteredGraphs(self):
         self.notch_graph = None
@@ -45,14 +49,10 @@ class TimeSeriesSignal(RawSignalViewer):
 
     
     def addFilter(self, Filter):
-        self.isFilterApplied = True
-        print(Filter)
-
         if Filter == "Notch":
             self.Filters["Notch"] = True
             self.notch_graph = RawSignalViewer(self.fs, self.num_channels, self.showChannels)
             self.notch_filter = NotchFilter(60, self.fs, len(self.num_channels))
-            print("Notch Filter Applied")
             self.notch_graph.show()
 
         if Filter == "Butter":
@@ -62,7 +62,6 @@ class TimeSeriesSignal(RawSignalViewer):
             self.butter_graph.show()
 
     def removeFilter(self, Filter):
-
         if Filter == "Notch":
             self.Filters["Notch"] = False
             if self.notch_graph is not None:
@@ -116,7 +115,7 @@ class TimeSeriesSignal(RawSignalViewer):
                                     len(self.chunk)))
 
 
-    def get_label(self):
+    def getMetaData(self):
         return self.label1
 
     
@@ -139,7 +138,7 @@ class TimeSeriesSignal(RawSignalViewer):
     
 
     def close_window(self):
-        #self.label1.clear()
+        self.label1.clear()
         self.main_timer.stop()
         self.close()
 

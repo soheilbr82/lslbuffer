@@ -62,17 +62,10 @@ class SignalViewer(pg.PlotWidget):
         self.vertical_line = pg.InfiniteLine(pos=0, angle=90, pen=pg.mkPen(color='B48375', width=1))
         self.addItem(self.vertical_line)
 
-        # notch filter
-        #if notch_filter:
-        ##    self.notch_filter_check_box = NotchButton(self)
-        #    self.notch_filter_check_box.setGeometry(18 * 2, 0, 100, 100)
-        #    self.notch_filter = NotchFilter(50, fs, self.n_signals)
-        #else:
-        #    self.notch_filter = None
+
 
     def update(self, chunk, setX=None, setPos=None):
         # estimate current pos
-        # chunk = self.inlet.pull_chunk(timeout=0.0)
         chunk_len = len(chunk)
         current_pos = (self.previous_pos + chunk_len) % self.n_samples
         if setX and setPos and self.pos != 0:
@@ -82,10 +75,6 @@ class SignalViewer(pg.PlotWidget):
         else:
             self.current_x = self.x_mesh[current_pos]
             self.current_pos = (self.previous_pos + chunk_len) % self.n_samples
-
-        # notch filter
-        #if self.notch_filter is not None and self.notch_filter_check_box.isChecked():
-        #    chunk = self.notch_filter.apply(chunk)
 
         # update buffer
         if self.previous_pos < self.current_pos:
@@ -172,44 +161,3 @@ class DerivedSignalViewer(SignalViewer):
 
     def __init__(self, fs, names, seconds_to_plot=5, **kwargs):
         super(DerivedSignalViewer, self).__init__(fs, names, seconds_to_plot, overlap=True, **kwargs)
-
-
-if __name__ == '__main__':
-    fs = 250
-    sec_to_plot = 10
-    n_samples = sec_to_plot * fs
-    n_channels = 110
-    chunk_len = 250
-
-"""    data = np.random.normal(size=(100000, n_channels)) * 500
-    b, a = signal.butter(2, 10 / fs * 2)
-    data = signal.lfilter(b, a, data, axis=0)
-
-    lsl = lb.LSLBUFFER(stream_type="EEG", buffer_size=1.0)
-    lsl.configure()
-    lsl.start()
-
-    fs = lsl.get_sampling_frequency()
-    n_channels = len(lsl.get_channels())
-
-    a = QtWidgets.QApplication([])
-    w = RawSignalViewer(fs, ['ch' + str(j) for j in range(n_channels)])
-
-    time = 0
-
-
-    def update():
-        global time
-        time += chunk_len
-        chunk = lsl.get_data()
-        w.update(chunk)
-
-
-    main_timer = QtCore.QTimer()
-    main_timer.timeout.connect(update)
-    main_timer.start(30)
-    main_timer.setInterval(1)
-
-    w.show()
-    a.exec_()
-"""
