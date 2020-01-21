@@ -52,7 +52,8 @@ class TimeSeriesSignal(RawSignalViewer):
         pass
 
     
-    def addFilter(self, Filter):
+    #Creates a new window with the specified Filter
+    def addFilter(self, Filter=None):
         if Filter == "Notch":
             self.Filters["Notch"] = True
             self.notch_graph = RawSignalViewer(self.fs, self.num_channels, self.showChannels)
@@ -68,11 +69,13 @@ class TimeSeriesSignal(RawSignalViewer):
             self.butter_graph.show()
 
     
+    #Changes the low/high band pass for the butter filter
     def changeFilter(self, Filter, band):
         if Filter == "Butter" and self.butter_graph is not None:
             self.butter_filter.reset(band)
 
 
+    #Destroys all windows of the specified Filter
     def removeFilter(self, Filter):
         if Filter == "Notch":
             self.Filters["Notch"] = False
@@ -86,7 +89,7 @@ class TimeSeriesSignal(RawSignalViewer):
                 self.butter_graph.close()
                 self.butter_graph = None
         
-    
+    #Starts
     def start(self):
         if self.main_timer.isActive():
             print("timer is active")

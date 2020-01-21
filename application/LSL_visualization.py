@@ -114,6 +114,7 @@ class LSLgui(QMainWindow):
             button.setParent(None)
             buttonGroup.removeButton(button)
 
+
     def clearLayout(self, layout):
         for cnt in reversed(range(layout.count())):
         # takeAt does both the jobs of itemAt and removeWidget
@@ -124,6 +125,9 @@ class LSLgui(QMainWindow):
             layout.removeWidget(widget)
 
 
+    #Keeps track of which streamt the user wants to view
+    #Once a stream is chosen, the corresponding channels are loaded in 
+    #Another view to show which channels are available to view in the graph
     def stream_clicked(self):
         self.currentStreamName = self.streamButtonGroup.checkedButton().objectName()
         
@@ -165,6 +169,7 @@ class LSLgui(QMainWindow):
         self.channelButtonGroup.buttonClicked['int'].connect(self.selectChannel)
 
 
+    #Keeps track of each individual channel selected for viewing
     def selectChannel(self, button_or_id):
         channelBtn = self.channelButtonGroup.checkedButton()
 
@@ -180,6 +185,9 @@ class LSLgui(QMainWindow):
                 self.showChannels.append(buttonID)
 
 
+    #If the "View All Channels" button is selected
+    #This method either selects all channels to view
+    #Or removes all channels from the viewing list
     def selectAllChannels(self):
         viewAllBtn = self.channelButtonGroup.button(0)
         buttons = self.channelButtonGroup.buttons()[1:]
@@ -198,15 +206,16 @@ class LSLgui(QMainWindow):
             self.showChannels.clear()
             self.showChannels = []
 
-
+    #Pauses the streaming data
     def pauseStream(self):
         self.graph.stop()
 
-
+    #Resumes the streaming data
     def resumeStream(self):
         self.graph.start()
 
     
+    #Displays the pause and resume buttons for the Time-Series/Frequency data
     def loadPauseResume(self):
         self.pauseBtn = QPushButton("Pause Stream")
         self.resumeBtn = QPushButton("Resume Stream")
@@ -218,6 +227,8 @@ class LSLgui(QMainWindow):
         self.resumeBtn.clicked.connect(self.resumeStream)
 
 
+    #Displays the filter options to apply to the Time-Series data
+    #Filter buttons are kept track of using a QButtonGroup container
     def loadFilters(self):
 
         self.Filters = QTreeWidget()
@@ -271,7 +282,8 @@ class LSLgui(QMainWindow):
 
         self.filterButtonGroup.buttonClicked['QAbstractButton *'].connect(self.selectFilters)
 
-
+    #Senses when the user changes the text in the low pass text box
+    #And applies a low pass filter to the window with the Butter Filter applied
     def applyLowPass(self,):
         if self.availableFilters["Butter"] == True:
             if len(self.bands["Low"].text()) == 0:
@@ -282,6 +294,8 @@ class LSLgui(QMainWindow):
 
             self.graph.changeFilter("Butter", (self.lowPass, self.highPass))
 
+    #Senses when the user changes the text in the high pass text box
+    #And applies a high pass filter to the window with the Butter Filter applied
     def applyHighPass(self,):
         if self.availableFilters["Butter"] == True:
             if len(self.bands["High"].text()) == 0:
@@ -293,6 +307,7 @@ class LSLgui(QMainWindow):
             self.graph.changeFilter("Butter", (self.lowPass, self.highPass))
 
     
+    #Keeps track of what filters are wanting to be applied by the user
     def selectFilters(self, button_or_id):
         if isinstance(button_or_id, QAbstractButton):
             if button_or_id.isChecked():
@@ -301,6 +316,9 @@ class LSLgui(QMainWindow):
                 self.availableFilters[button_or_id.text()] = False
 
 
+    #Checks to see if any filters are wanting to be applied by the user
+    #If so, it creates a new window with the filter applied
+    #Else, it destroys any existing windows with filters applied
     def applyFilters(self):
         if any(self.availableFilters):
 
@@ -309,8 +327,6 @@ class LSLgui(QMainWindow):
                     self.graph.addFilter(f)
                 else: 
                     self.graph.removeFilter(f)
-
-            
 
 
     def showTSStream(self):
@@ -357,6 +373,7 @@ class LSLgui(QMainWindow):
             self.graph = TimeSeriesSignal(fs, channels, view_channels, lsl_inlet=lsl_inlet)
             self.TimeSeriesViewer.addWidget(self.graph)
 
+            #Ensures multiple copies of the meta data are not created with each click of "Visualize Time Series"
             self.clearLayout(self.streamDataLayout)
             self.streamDataLayout.addWidget(self.graph.getMetaData())
 
@@ -384,6 +401,7 @@ class LSLgui(QMainWindow):
             #If they are, remove them since the Time Frequency graph does not require the use of filters
             if not self.filterLayout1.isEmpty():
                 self.clearLayout(self.filterLayout1)
+                self.clearButtonGroup(self.filterButtonGroup)
                 self.clearLayout(self.applyFilterLayout)
             
             #Check to see if the meta data from the Time Series graph is still visible
@@ -412,6 +430,7 @@ class LSLgui(QMainWindow):
                 self.graph.resetChannel(view_channel)
             
 
+    #Displays an error message specified by the programmer
     def displayError(self, error_message):
         errorBox = ErrorBox(message = error_message)
         errorBox.exec_()
@@ -483,6 +502,8 @@ class LSLgui(QMainWindow):
         self.graph_filters = None
 
 
+    #Ensures a clean exit of the main application window
+    #Closes all graphs and disconnects and lsl inlets
     def mainWindowExitHandler(self):
         if self.graph is not None:
             self.graph.close_window()    

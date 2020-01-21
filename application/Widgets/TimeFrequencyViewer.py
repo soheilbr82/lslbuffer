@@ -32,7 +32,6 @@ LR = "l"
 class SpectrumAnalyzer(QWidget):
     def __init__(self, lsl, channel):
         super(SpectrumAnalyzer, self).__init__()
-
         self.lsl=lsl
         self.channel = channel
         self.fs = self.lsl.get_nominal_srate()

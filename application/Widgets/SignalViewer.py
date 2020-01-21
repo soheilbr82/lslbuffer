@@ -19,6 +19,7 @@ class SignalViewer(pg.PlotWidget):
         super(SignalViewer, self).__init__(**kwargs)
         # gui settings
 
+        self.setTitle("Time-Series Graph")
         self.getPlotItem().showGrid(y=True)
         self.getPlotItem().setMenuEnabled(enableMenu=False)
         self.getPlotItem().setMouseEnabled(x=False, y=False)
