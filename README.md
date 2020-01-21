@@ -68,7 +68,7 @@ eeg_graph = rt_timeseries.Grapher(streams[0],250*10,'k',invert=True)
 
 
 
-# Running App using iPython
+# Running App using VersaStream
 
 The code that runs the main LSL GUI application
 
