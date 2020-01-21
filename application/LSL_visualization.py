@@ -10,6 +10,7 @@ from application.Widgets.Logo import UTKLogo
 from application.Widgets.Error import ErrorBox
 from application.Widgets.TimeFrequencyViewer import SpectrumAnalyzer
 from application.Widgets.TimeSeriesViewer import TimeSeriesSignal
+from application.Widgets.QueryData import StreamData
 from application.Buffers.lslringbuffer_multithreaded import LSLRINGBUFFER
 
 #Python library modules
@@ -25,12 +26,15 @@ class LSLgui(QMainWindow):
         self.setMaximumSize(1150,1000) 
 
         self.avail_streams = dict()  # holds information about all of the availableStreams for the query
-        self.filters = {"Notch": False, "Butter": False}  # holds UI information for the various filters, i.e. notch and butter
+        self.availableFilters = {"Notch": False, "Butter": False}  # holds UI information for the various filters, i.e. notch and butter
+        self.bands = {"Low" : None, "High": None}
         self.lslobj = dict()
 
         self.channels = []  # holds the QCheckList object for the channels for the current available stream
         self.showChannels = []  # holds the channels selected for visualization
 
+        self.streamButtonGroup = None
+        self.channelButtonGroup = None
         self.currentStreamName = None  # holds the current stream name of the stream wanting to be observed
         self.streamView = None
         self.graph = None
@@ -65,7 +69,14 @@ class LSLgui(QMainWindow):
     def loadQuery(self):
 
         # Refreshes query every time query button is clicked
-        self.clearLayout(self.streamQueryLayout)
+        self.Query.clear()
+        self.clearLayout(self.channelLayout)
+        self.channelLayout.addWidget(QLabel("No available channels to view at this time."))
+
+        if self.streamButtonGroup is not None:
+            self.clearButtonGroup(self.streamButtonGroup)
+            self.streamButtonGroup = None
+
         self.getAvailableStreams()
 
 
@@ -76,19 +87,32 @@ class LSLgui(QMainWindow):
             for index, stream in enumerate(self.lslobj.keys()):
                 info = self.lslobj[stream]
 
-                streamInfo = "View %s?\n\t\t- Channel_Count: %d\n\t\t- Nominal_srate: %d\n\t\t- Channel_format: %s\n\t\t- UID: %s \n\t\t- Hostname: %s\n" % (stream, info.get_channel_count(), info.get_nominal_srate(), info.get_channel_format(), info.get_uid(), info.get_hostname())
+                metaData = StreamData(["Name: %s - Type: %s" % (stream, info.get_stream_type())])
+                self.Query.addTopLevelItem(metaData)
 
-                streamBtn = QRadioButton(streamInfo)
+                metaData.addChildItem(QTreeWidgetItem(["Channel_Count: %d" % info.get_channel_count()]))
+                metaData.addChildItem(QTreeWidgetItem(["Nominal_srate: %d" % info.get_nominal_srate()]))
+                metaData.addChildItem(QTreeWidgetItem(["Channel_format: %s" % info.get_channel_format()]))
+                metaData.addChildItem(QTreeWidgetItem(["uid: %s" % info.get_uid()]))
+                metaData.addChildItem(QTreeWidgetItem(["Hostname: %s" % info.get_hostname()]))
+
+                streamBtn = QRadioButton("View %s?" % stream)
                 streamBtn.setObjectName(stream)
-                self.streamButtonGroup.addButton(streamBtn, index)
-                self.streamQueryLayout.addWidget(streamBtn)
-
                 streamBtn.clicked.connect(self.stream_clicked)
 
-        else:
-            item = QLabel(" No available streams that meet the given criteria!\n Please make sure that streams are running.")
-            self.streamQueryLayout.addWidget(item)
+                # Keeps tracks of the selected stream
+                self.streamButtonGroup.addButton(streamBtn, index)
+                self.Query.setItemWidget(metaData, 1, streamBtn)
 
+        else:
+            item = QTreeWidgetItem(["No available streams that meet the given criteria!\nPlease make sure that streams are running."])
+            self.Query.addTopLevelItem(item)
+
+
+    def clearButtonGroup(self, buttonGroup):
+        for button in buttonGroup.buttons():
+            button.setParent(None)
+            buttonGroup.removeButton(button)
 
     def clearLayout(self, layout):
         for cnt in reversed(range(layout.count())):
@@ -99,17 +123,21 @@ class LSLgui(QMainWindow):
             widget.setParent(None)
             layout.removeWidget(widget)
 
+
     def stream_clicked(self):
         self.currentStreamName = self.streamButtonGroup.checkedButton().objectName()
-        self.loadChannels()
+        
+        self.clearLayout(self.channelLayout)
 
+        if self.channelButtonGroup is not None:
+            self.clearButtonGroup(self.channelButtonGroup)
+
+        self.showChannels.clear()
+        self.loadChannels()
 
     def loadChannels(self):
         # Gets the name of the chosen stream needed under observation
         print("Load channels for {}".format(self.currentStreamName))
-
-        self.clearLayout(self.channelLayout)
-        self.showChannels.clear()
 
 
         # Resets signal viewer object for the new stream to be viewed
@@ -117,8 +145,8 @@ class LSLgui(QMainWindow):
         self.channelButtonGroup.setExclusive(False)
 
         viewAllBtn = QCheckBox("View All Channels")
-
         viewAllBtn.setObjectName("View All")
+
         self.channelButtonGroup.addButton(viewAllBtn, 0)
         self.channelLayout.addWidget(viewAllBtn)
 
@@ -126,19 +154,16 @@ class LSLgui(QMainWindow):
 
 
         # Loads the available channels for the current stream under observation
-        for index, channel in enumerate(self.lslobj[self.currentStreamName].get_channels()):
-            channelBtn = QCheckBox("%s" % channel)
+        for index, c in enumerate(self.lslobj[self.currentStreamName].get_channels()):
+            channelBtn = QCheckBox(c)
+            channelBtn.setObjectName(c)
             channelID = index+1
 
-            #channelBtn.setObjectName(channel)
             self.channelButtonGroup.addButton(channelBtn, channelID)
             self.channelLayout.addWidget(channelBtn)
 
         self.channelButtonGroup.buttonClicked['int'].connect(self.selectChannel)
 
-
-    def clearChannels(self):
-        pass
 
     def selectChannel(self, button_or_id):
         channelBtn = self.channelButtonGroup.checkedButton()
@@ -195,25 +220,50 @@ class LSLgui(QMainWindow):
 
     def loadFilters(self):
 
-        self.filterScroll = QScrollArea()
-        self.filtersBox = QGroupBox("Available Filters")
-        self.filterScroll.setWidget(self.filtersBox)
-        self.filterLayout2 = QVBoxLayout()
-        self.filtersBox.setLayout(self.filterLayout2)
-        self.filterLayout1.addWidget(self.filtersBox)
+        self.Filters = QTreeWidget()
+        self.Filters.setColumnCount(2)
+        self.Filters.header().setSectionResizeMode(3)
+        self.filterLayout1.addWidget(self.Filters)
 
         self.filterButtonGroup = QButtonGroup()
         self.filterButtonGroup.setExclusive(False)
 
+        notch = QTreeWidgetItem(["Notch Filter"])
+        self.Filters.addTopLevelItem(notch)
+
+        butter = QTreeWidgetItem(["Butter Filter"])
+        self.Filters.addTopLevelItem(butter)
+
+        i1 = QTreeWidgetItem(["Low Pass"])
+        i2 = QTreeWidgetItem(["High Pass"])
+        butter.addChild(i1)
+        butter.addChild(i2)
+
+        self.bands["Low"] = QLineEdit()
+        self.bands["Low"].setFixedHeight(30)
+        self.bands["Low"].setFixedWidth(125)
+        self.lowPass = None
+
+        self.bands["High"] = QLineEdit()
+        self.bands["High"].setFixedHeight(30)
+        self.bands["High"].setFixedWidth(125)
+        self.highPass = None
+
+        self.bands["Low"].editingFinished.connect(self.applyLowPass)
+        self.bands["High"].editingFinished.connect(self.applyHighPass)
+
         notchBtn = QCheckBox("Notch")
         notchBtn.setObjectName("notch")
         self.filterButtonGroup.addButton(notchBtn, 0)
-        self.filterLayout2.addWidget(notchBtn)
 
         butterBtn = QCheckBox("Butter")
         butterBtn.setObjectName("butter")
         self.filterButtonGroup.addButton(butterBtn, 1)
-        self.filterLayout2.addWidget(butterBtn)
+
+        self.Filters.setItemWidget(notch, 1, notchBtn)
+        self.Filters.setItemWidget(butter, 1, butterBtn)
+        self.Filters.setItemWidget(i1, 1, self.bands["Low"])
+        self.Filters.setItemWidget(i2, 1, self.bands["High"])
 
         self.applyFilterBtn = QPushButton("Apply Filter(s)")
         self.applyFilterLayout.addWidget(self.applyFilterBtn)
@@ -221,24 +271,44 @@ class LSLgui(QMainWindow):
 
         self.filterButtonGroup.buttonClicked['QAbstractButton *'].connect(self.selectFilters)
 
+
+    def applyLowPass(self,):
+        if self.availableFilters["Butter"] == True:
+            if len(self.bands["Low"].text()) == 0:
+                self.lowPass = 0.1
+            else:
+                if 0.1 <= float(self.bands["Low"].text()):
+                    self.lowPass = float(self.bands["Low"].text())
+
+            self.graph.changeFilter("Butter", (self.lowPass, self.highPass))
+
+    def applyHighPass(self,):
+        if self.availableFilters["Butter"] == True:
+            if len(self.bands["High"].text()) == 0:
+                self.highPass = (self.lslobj[self.currentStreamName].get_nominal_srate() / 2) - .001
+            else:
+                if float(self.bands["High"].text()) < self.lslobj[self.currentStreamName].get_nominal_srate() / 2:
+                    self.highPass = float(self.bands["High"].text())
+
+            self.graph.changeFilter("Butter", (self.lowPass, self.highPass))
+
     
     def selectFilters(self, button_or_id):
         if isinstance(button_or_id, QAbstractButton):
             if button_or_id.isChecked():
-                self.filters[button_or_id.text()] = True
+                self.availableFilters[button_or_id.text()] = True
             else:
-                self.filters[button_or_id.text()] = False
+                self.availableFilters[button_or_id.text()] = False
 
 
     def applyFilters(self):
-        #Checks to see if any of the filters have been selected
-        if any(self.filters):
-            for Filter in self.filters.keys():
+        if any(self.availableFilters):
 
-                if self.filters[Filter] == True:
-                    self.graph.addFilter(Filter)
+            for f in self.availableFilters.keys():
+                if self.availableFilters[f] == True:
+                    self.graph.addFilter(f)
                 else: 
-                    self.graph.removeFilter(Filter)
+                    self.graph.removeFilter(f)
 
             
 
@@ -254,7 +324,6 @@ class LSLgui(QMainWindow):
             self.displayError("Please select only ONE channel to view.")
 
         else:
-
             #Check is Time Frequency is in use
             #If it is, clear the layout to ensure clear visibility of the Time Series Graph
             if not self.TimeFrequencyLayout.isEmpty():
@@ -284,10 +353,13 @@ class LSLgui(QMainWindow):
                 self.graph.close()
                 self.TimeSeriesViewer.removeWidget(self.graph)
 
+
             self.graph = TimeSeriesSignal(fs, channels, view_channels, lsl_inlet=lsl_inlet)
             self.TimeSeriesViewer.addWidget(self.graph)
+
+            self.clearLayout(self.streamDataLayout)
             self.streamDataLayout.addWidget(self.graph.getMetaData())
-            
+
 
 
     def showTFStream(self):
@@ -312,7 +384,6 @@ class LSLgui(QMainWindow):
             #If they are, remove them since the Time Frequency graph does not require the use of filters
             if not self.filterLayout1.isEmpty():
                 self.clearLayout(self.filterLayout1)
-                self.clearLayout(self.filterLayout2)
                 self.clearLayout(self.applyFilterLayout)
             
             #Check to see if the meta data from the Time Series graph is still visible
@@ -341,7 +412,6 @@ class LSLgui(QMainWindow):
                 self.graph.resetChannel(view_channel)
             
 
-    #Displays an error message
     def displayError(self, error_message):
         errorBox = ErrorBox(message = error_message)
         errorBox.exec_()
@@ -353,8 +423,6 @@ class LSLgui(QMainWindow):
         self.queryBtn = self.findChild(QPushButton, 'queryButton')
         self.visualBtn = self.findChild(QPushButton, 'visualizeButton')
         self.timeFreqBtn = self.findChild(QPushButton, 'visualizeTimeFreqButton')
-        self.queryStreams = self.findChild(QComboBox, 'availableStreams')
-        self.streamName = self.findChild(QLineEdit, 'StreamName')
 
         self.TimeSeriesLayout = self.findChild(QGridLayout, 'TimeSeriesViewer')
         self.TimeFrequencyLayout = self.findChild(QGridLayout, 'TimeFrequencyViewer')
@@ -364,9 +432,6 @@ class LSLgui(QMainWindow):
         self.applyFilterLayout = self.findChild(QGridLayout, 'applyFilter')
 
         self.streamDataLayout = self.findChild(QVBoxLayout, 'streamData')
-        self.streamMetaData = self.findChild(QLabel, 'streamLabel')
-        self.streamMetaData.setAlignment(Qt.AlignCenter)
-        self.streamDataLayout.addWidget(self.streamMetaData)
 
         self.pauseView = self.findChild(QGridLayout, 'pauseView')
         self.resumeView = self.findChild(QGridLayout, 'resumeView')
@@ -380,21 +445,27 @@ class LSLgui(QMainWindow):
         label.setAlignment(Qt.AlignCenter)
 
         self.channelScroll = self.findChild(QScrollArea, 'channelLayout')
-        self.availableChannels = QGroupBox("Available Channels")
-        self.channelScroll.setWidget(self.availableChannels)
         self.channelLayout = QVBoxLayout()
-        self.availableChannels.setLayout(self.channelLayout)
+        self.channelScroll.setLayout(self.channelLayout)
 
+        self.channelScroll = self.findChild(QScrollArea, 'channelLayout')
+        self.availableChannels = QWidget()
+        self.availableChannels.setStyleSheet('background-color: white')        
+        self.channelScroll.setWidget(self.availableChannels)
+        self.channelScroll.setWidgetResizable(True)
+        self.channelLayout = QVBoxLayout(self.availableChannels)
+        self.availableChannels.setLayout(self.channelLayout)
+        self.channelLayout.addWidget(QLabel("No available channels to view at this time."))
 
         self.queryScroll = self.findChild(QScrollArea, 'queryStream')
-        self.Query = QGroupBox("Available Streams")
+
+        self.Query = QTreeWidget()
+        self.Query.setColumnCount(2)
+        self.Query.header().setSectionResizeMode(3)
         self.queryScroll.setWidget(self.Query)
-        self.streamQueryLayout = QVBoxLayout()
-        self.Query.setLayout(self.streamQueryLayout)
 
 
         self.filterLayout1 = self.findChild(QVBoxLayout, 'filterLayout')
-
 
         self.queryBtn.clicked.connect(self.loadQuery)
         self.visualBtn.clicked.connect(self.showTSStream)

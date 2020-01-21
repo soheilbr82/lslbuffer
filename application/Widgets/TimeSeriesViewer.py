@@ -48,18 +48,30 @@ class TimeSeriesSignal(RawSignalViewer):
         self.butter_graph = None
 
     
+    def resetChannels(self):
+        pass
+
+    
     def addFilter(self, Filter):
         if Filter == "Notch":
             self.Filters["Notch"] = True
             self.notch_graph = RawSignalViewer(self.fs, self.num_channels, self.showChannels)
+            self.notch_graph.setWindowTitle('Notch Filter')
             self.notch_filter = NotchFilter(60, self.fs, len(self.num_channels))
             self.notch_graph.show()
 
         if Filter == "Butter":
             self.Filters["Butter"] = True
             self.butter_graph = RawSignalViewer(self.fs, self.num_channels, self.showChannels)
+            self.butter_graph.setWindowTitle('Butter Filter')
             self.butter_filter = ButterFilter((0.1, (self.fs / 2) - 0.001), self.fs, len(self.num_channels))
             self.butter_graph.show()
+
+    
+    def changeFilter(self, Filter, band):
+        if Filter == "Butter" and self.butter_graph is not None:
+            self.butter_filter.reset(band)
+
 
     def removeFilter(self, Filter):
         if Filter == "Notch":

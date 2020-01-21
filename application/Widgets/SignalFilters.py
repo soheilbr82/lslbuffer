@@ -27,20 +27,26 @@ class NotchFilter(BaseFilter):
 class ButterFilter(BaseFilter):
     def __init__(self, band, fs, n_channels, order=4):
         self.n_channels = n_channels
+        self.fs = fs
+        self.order = order
+        self.reset(band)
+
+    def reset(self, band):
         low, high = band
+
         if low is None and high is None:
             raise ValueError('band should involve one or two not None values')
         elif low is None:
-            self.b, self.a = butter(order, high/fs*2, btype='low')
+            self.b, self.a = butter(self.order, high/self.fs*2, btype='low')
         elif high is None:
-            self.b, self.a = butter(order, low/fs*2, btype='high')
+            self.b, self.a = butter(self.order, low/self.fs*2, btype='high')
         else:
-            self.b, self.a = butter(order, [low/fs*2, high/fs*2], btype='band')
-        self.zi = np.zeros((max(len(self.b), len(self.a)) - 1, n_channels))
+            self.b, self.a = butter(self.order, [low/self.fs*2, high/self.fs*2], btype='band')
+        self.zi = np.zeros((max(len(self.b), len(self.a)) - 1, self.n_channels))
 
     def apply(self, chunk: np.ndarray):
         y, self.zi = lfilter(self.b, self.a, chunk, axis=0, zi=self.zi)
         return y
 
-    def reset(self):
-        self.zi = np.zeros((max(len(self.b), len(self.a)) - 1, self.n_channels))
+    #def reset(self):
+    #    self.zi = np.zeros((max(len(self.b), len(self.a)) - 1, self.n_channels))

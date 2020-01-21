@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QApplication
 
 if __name__ == '__main__':
     if platform == "linux" or platform == "linux2":
-        from application.LSL_visualization_copy import LSLgui
+        from application.LSL_visualization import LSLgui
 
         # Create Qt application
         app=QApplication(sys.argv)  
@@ -20,7 +20,7 @@ if __name__ == '__main__':
         sys.exit(app.exec_())
 
     elif platform == "darwin":
-        from application.LSL_visualization_copy import LSLgui
+        from application.LSL_visualization import LSLgui
 
         # Create Qt application
         app=QApplication(sys.argv)  
@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     elif platform == "win32":
         p = Popen(['ipython', '--pylab=qt'], stdout=PIPE,  stdin=PIPE, stderr=STDOUT)
-        grep_stdout = p.communicate(input=b'from application.LSL_visualization_copy import LSLgui\nimport sys\n'
+        grep_stdout = p.communicate(input=b'from application.LSL_visualization import LSLgui\nimport sys\n'
                                           b'from PyQt5.QtWidgets import QApplication\napp = QApplication(sys.argv)\n'
                                           b'gui=LSLgui()\napp.aboutToQuit.connect(gui.mainWindowExitHandler)\n'
                                           b'sys.exit(app.exec_())\n')[0]
