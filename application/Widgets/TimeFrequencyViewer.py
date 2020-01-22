@@ -36,7 +36,7 @@ class SpectrumAnalyzer(QWidget):
         self.channel = channel
         self.fs = self.lsl.get_nominal_srate()
 
-        self.BUFFERSIZE=2**12 #1024 is a good buffer size
+        # self.BUFFERSIZE=2**12 #1024 is a good buffer size
 
         self.stop_threads = False
         self.eeg_sig = Queue()
@@ -56,15 +56,7 @@ class SpectrumAnalyzer(QWidget):
         sample = self.eeg_sig.get()
         shorts = sample[:, self.channel]
 
-        if CHANNELS == 1:
-            return np.array(shorts)
-        else:
-            l = shorts[::2]
-            r = shorts[1::2]
-            if LR == 'l':
-                return np.array(l)
-            else:
-                return np.array(r)
+        return np.array(shorts)
                 
 
     def createTimer(self):
@@ -77,6 +69,7 @@ class SpectrumAnalyzer(QWidget):
         self.lay = QVBoxLayout()
         self.setLayout(self.lay)
         self.specWid = pg.PlotWidget(name="spectrum")
+        self.specWid.setTitle("Time-Frequency Graph")
         self.specItem = self.specWid.getPlotItem()
         self.specItem.setMouseEnabled(y=False)
         self.specItem.setYRange(0, 1)
