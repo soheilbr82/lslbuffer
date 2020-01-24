@@ -21,8 +21,9 @@ class SignalViewer(pg.PlotWidget):
 
         self.setTitle("Time-Series Graph")
         self.getPlotItem().showGrid(y=True)
+        #self.getPlotItem().enableAutoRange(axis='y')
         self.getPlotItem().setMenuEnabled(enableMenu=False)
-        self.getPlotItem().setMouseEnabled(x=False, y=False)
+        self.getPlotItem().setMouseEnabled(x=True, y=False)
         self.getPlotItem().autoBtn.disable()
         self.getPlotItem().autoBtn.setScale(0)
         self.getPlotItem().setXRange(0, seconds_to_plot)
@@ -113,8 +114,9 @@ class RawSignalViewer(SignalViewer):
         super(RawSignalViewer, self).__init__(fs, names, view_channels, seconds_to_plot=seconds_to_plot, overlap=False,
                                               signals_to_plot=5, **kwargs)
         # gui settings
-        self.getPlotItem().setYRange(0, self.n_signals_to_plot + 1)
+        #self.getPlotItem().setYRange(0, self.n_signals_to_plot + 1)
         self.getPlotItem().disableAutoRange()
+        #self.getPlotItem().enableAutoRange(axis='y')
 
         self.names = []
         self.indices = view_channels
