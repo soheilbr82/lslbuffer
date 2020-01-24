@@ -114,7 +114,7 @@ class RawSignalViewer(SignalViewer):
         super(RawSignalViewer, self).__init__(fs, names, view_channels, seconds_to_plot=seconds_to_plot, overlap=False,
                                               signals_to_plot=5, **kwargs)
         # gui settings
-        #self.getPlotItem().setYRange(0, self.n_signals_to_plot + 1)
+        self.getPlotItem().setYRange(0, self.n_signals_to_plot + 1)
         self.getPlotItem().disableAutoRange()
         #self.getPlotItem().enableAutoRange(axis='y')
 
