@@ -73,7 +73,7 @@ class SpectrumAnalyzer(QWidget):
         self.specWid.setTitle("Time-Frequency Graph")
         self.specItem = self.specWid.getPlotItem()
         self.specItem.setMouseEnabled(y=False)
-        self.specItem.setYRange(-40, 5)
+        self.specItem.setYRange(-60, 20)
         self.specItem.setXRange(0, int(self.fs/2), padding=0)
 
         self.specAxis = self.specItem.getAxis("bottom")
@@ -110,9 +110,9 @@ class SpectrumAnalyzer(QWidget):
 
     # Computing power spectral density using Welch's method
     def get_spectral_density(self,data):
-        if(len(data) >= 2*self.fs):
-            win = 2 * self.fs
-            freqs, psd = signal.welch(data, self.fs, nperseg=win)
+        if(len(data) >= 3*self.fs):
+            win = 3 * self.fs
+            freqs, psd = signal.welch(data, self.fs, nperseg=win, window='hanning', noverlap=win/2, scaling='spectrum')
             psd = 10*np.log10(psd)
             # print(psd)
             return freqs, psd
