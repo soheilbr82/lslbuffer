@@ -71,9 +71,9 @@ class SpectrumAnalyzer(QWidget):
         self.specWid = pg.PlotWidget(name="spectrum")
         self.specWid.setTitle("Time-Frequency Graph")
         self.specItem = self.specWid.getPlotItem()
-        self.specItem.setMouseEnabled(y=True)
-        #self.specItem.setYRange(0, )
-        self.specItem.setXRange(0, self.fs, padding=0)
+        self.specItem.setMouseEnabled(y=False)
+        self.specItem.setYRange(0, 1)
+        self.specItem.setXRange(0, RANGE, padding=0)
 
         self.specAxis = self.specItem.getAxis("bottom")
         self.specAxis.setLabel("Frequency [Hz]")
@@ -141,7 +141,6 @@ class SpectrumAnalyzer(QWidget):
         except IOError:
             pass
 
-        print(len(data))
         f, Pxx = self.get_spectral_density(data)
 
         if f is not None and Pxx is not None:
