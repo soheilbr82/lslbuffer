@@ -27,27 +27,29 @@ class LSLgui(QMainWindow):
 
         self.avail_streams = dict()  # holds information about all of the availableStreams for the query
         self.availableFilters = {"Notch": False, "Butter": False}  # holds UI information for the various filters, i.e. notch and butter
-        self.bands = {"Low" : None, "High": None}
-        self.lslobj = dict()
+        self.bands = {"Low" : None, "High": None} # Holds UI widgets for lowPass and highPass bands used for butter filter
+        self.lslobj = dict() # Contains the lsl inlets for each stream object
 
         self.channels = []  # holds the QCheckList object for the channels for the current available stream
         self.showChannels = []  # holds the channels selected for visualization
 
-        self.streamButtonGroup = None
-        self.channelButtonGroup = None
+        self.streamButtonGroup = None # Contains information about each stream button
+        self.channelButtonGroup = None # Contains informations about each channel button for the current stream
         self.currentStreamName = None  # holds the current stream name of the stream wanting to be observed
         self.streamView = None
-        self.graph = None
+        self.graph = None # Contains the widget that displays either Time-Series data or Time-Frequency data
 
         self.initUI() 
 
 
     def getAvailableStreams(self):
-        self.isAvailable = False
-        self.lslobj.clear()
+        self.isAvailable = False # Resets availability of streams -> Always false unless stream is found
+        self.lslobj.clear() # Clears container of lsl inlets for new batch of inlets
 
-        streams = pylsl.resolve_streams(wait_time=1.0)
+        streams = pylsl.resolve_streams(wait_time=1.0) # Contains information about all available lsl inlets
 
+        # If streams list is empty, no streams are available
+        # Clear the channelLayout of all previously listed channels, since no streams are available
         if len(streams) == 0:
             print("No streams available.")
             self.clearChannels()
@@ -139,6 +141,7 @@ class LSLgui(QMainWindow):
         self.showChannels.clear()
         self.loadChannels()
 
+
     def loadChannels(self):
         # Gets the name of the chosen stream needed under observation
         print("Load channels for {}".format(self.currentStreamName))
@@ -206,9 +209,11 @@ class LSLgui(QMainWindow):
             self.showChannels.clear()
             self.showChannels = []
 
+
     #Pauses the streaming data
     def pauseStream(self):
         self.graph.stop()
+
 
     #Resumes the streaming data
     def resumeStream(self):
@@ -491,16 +496,6 @@ class LSLgui(QMainWindow):
         self.timeFreqBtn.clicked.connect(self.showTFStream)
 
         self.showMaximized()
-
-
-    def exitHandler(self):
-        for graph in self.graph_filters:
-            graph.close_window()
-            graph = None
-
-        self.graph_filters.clear()
-        self.graph_filters = None
-
 
     #Ensures a clean exit of the main application window
     #Closes all graphs and disconnects and lsl inlets
