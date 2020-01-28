@@ -8,7 +8,7 @@ import pyqtgraph as pg
 #Self created modules
 from application.Widgets.Logo import UTKLogo
 from application.Widgets.Error import ErrorBox
-from application.Widgets.TimeFrequencyViewer import SpectrumAnalyzer
+from application.Widgets.FrequencyViewer import SpectrumAnalyzer
 from application.Widgets.TimeSeriesViewer import TimeSeriesSignal
 from application.Widgets.QueryData import StreamData
 from application.Buffers.lslringbuffer_multithreaded import LSLRINGBUFFER
@@ -347,8 +347,8 @@ class LSLgui(QMainWindow):
         else:
             #Check is Time Frequency is in use
             #If it is, clear the layout to ensure clear visibility of the Time Series Graph
-            if not self.TimeFrequencyLayout.isEmpty():
-                    self.clearLayout(self.TimeFrequencyLayout)
+            if not self.FrequencyLayout.isEmpty():
+                    self.clearLayout(self.FrequencyLayout)
                     self.graph.close_window()
                     self.graph = None
 
@@ -422,12 +422,12 @@ class LSLgui(QMainWindow):
             #If this is the first time the Time Frequency graph is being used
             #Get the current stream inlet and the selected channel to view
             #Pass these in as arguments to create a SpectrumAnalyzer object
-            if self.TimeFrequencyLayout.isEmpty():
+            if self.FrequencyLayout.isEmpty():
                 lsl_inlet = self.lslobj[self.currentStreamName]
             
                 view_channel = self.showChannels[0]
                 self.graph = SpectrumAnalyzer(lsl_inlet, view_channel)
-                self.TimeFrequencyViewer.addWidget(self.graph)
+                self.FrequencyViewer.addWidget(self.graph)
 
             #Resets the channel currently in the graph with the newly selected channel
             else:
@@ -446,10 +446,10 @@ class LSLgui(QMainWindow):
 
         self.queryBtn = self.findChild(QPushButton, 'queryButton')
         self.visualBtn = self.findChild(QPushButton, 'visualizeButton')
-        self.timeFreqBtn = self.findChild(QPushButton, 'visualizeTimeFreqButton')
+        self.freqBtn = self.findChild(QPushButton, 'visualizeFreqButton')
 
         self.TimeSeriesLayout = self.findChild(QGridLayout, 'TimeSeriesViewer')
-        self.TimeFrequencyLayout = self.findChild(QGridLayout, 'TimeFrequencyViewer')
+        self.FrequencyLayout = self.findChild(QGridLayout, 'FrequencyViewer')
         self.pauseBtn = self.findChild(QGridLayout, 'pauseStream')
         self.resumeBtn = self.findChild(QGridLayout, 'resumeStream')
         self.filterLayout = self.findChild(QGridLayout, 'filtersBox')
@@ -493,7 +493,7 @@ class LSLgui(QMainWindow):
 
         self.queryBtn.clicked.connect(self.loadQuery)
         self.visualBtn.clicked.connect(self.showTSStream)
-        self.timeFreqBtn.clicked.connect(self.showTFStream)
+        self.freqBtn.clicked.connect(self.showTFStream)
 
         self.showMaximized()
 

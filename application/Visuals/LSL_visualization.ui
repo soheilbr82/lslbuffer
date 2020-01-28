@@ -99,7 +99,7 @@
     </property>
     <layout class="QGridLayout" name="applyFilter"/>
    </widget>
-   <widget class="QPushButton" name="visualizeTimeFreqButton">
+   <widget class="QPushButton" name="visualizeFreqButton">
     <property name="geometry">
      <rect>
       <x>960</x>
@@ -109,7 +109,7 @@
      </rect>
     </property>
     <property name="text">
-     <string>Visualize Timefrequency</string>
+     <string>Visualize Frequency</string>
     </property>
    </widget>
    <widget class="QWidget" name="gridLayoutWidget_4">
@@ -189,7 +189,7 @@
       <height>291</height>
      </rect>
     </property>
-    <layout class="QGridLayout" name="TimeFrequencyViewer"/>
+    <layout class="QGridLayout" name="FrequencyViewer"/>
    </widget>
    <widget class="QWidget" name="verticalLayoutWidget_2">
     <property name="geometry">
