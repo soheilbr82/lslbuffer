@@ -5,13 +5,12 @@ import pylsl
 from scipy import signal, stats
 
 
-# import sys
-# from pynfb.signal_processing.filters import NotchFilter, IdentityFilter, FilterSequence
-
 paired_colors = ['#dbae57', '#57db6c', '#dbd657', '#57db94', '#b9db57', '#57dbbb', '#91db57', '#57d3db', '#69db57',
                  '#57acdb']
-images_path = os.path.realpath(os.path.dirname(os.path.realpath(__file__)) + '/../static/imag') + '/'
 
+# Configuration options for pgqtgraph widgets
+# pg.setConfigOptions(leftButtonPan=False) -> If you don't have a mouse and it is difficult to interact with the window,
+#                                               Uncomment to allow for a one-time zoom option
 pg.setConfigOptions(antialias=True)
 
 class SignalViewer(pg.PlotWidget):
@@ -85,7 +84,8 @@ class SignalViewer(pg.PlotWidget):
                                                        np.array(self.indices)]
 
         # pre-process y data and update it
-        y_data = self.y_raw_buffer#self.prepare_y_data(chunk_len)
+        # y_data = self.prepare_y_data(chunk_len)
+        y_data = self.y_raw_buffer 
         before_mask = (self.x_stamps < self.current_pos)
         for i, curve in enumerate(self.curves):
             y = y_data[:, i] if i < y_data.shape[1] else self.x_mesh * np.nan
@@ -113,8 +113,6 @@ class RawSignalViewer(SignalViewer):
                                               signals_to_plot=5, **kwargs)
         # gui settings
         self.getPlotItem().setRange(yRange=(0, self.n_signals_to_plot + 1))
-        #self.getPlotItem().disableAutoRange()
-        #self.getPlotItem().enableAutoRange(axis='y')
 
         self.names = []
         self.indices = view_channels

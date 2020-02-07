@@ -14,27 +14,14 @@ from PyQt5.QtWidgets import*
 from PyQt5.QtCore import*
 from PyQt5.QtGui import*
 
-# Audio Format (check Audio MIDI Setup if on Mac)
-# FORMAT = pyaudio.paInt16
-RATE = 250
-CHANNELS = 32
 
-# Set Plot Range [-RANGE,RANGE], default is nyquist/2
-RANGE = None
-if not RANGE:
-    RANGE = RATE / 2
-
-# Set these parameters (How much data to plot per FFT)
-INPUT_BLOCK_TIME = 0.05
-INPUT_FRAMES_PER_BLOCK = int(RATE * INPUT_BLOCK_TIME)
-
-# Which Channel? (L or R)
-LR = "l"
-
-
+pg.setConfigOptions(antialias=True)
 class SpectrumAnalyzer(pg.PlotWidget):
     def __init__(self, lsl, channel):
         super(SpectrumAnalyzer, self).__init__()
+        self.setBackgroundBrush(pg.mkBrush('#252120'))
+        self.getPlotItem().setMouseEnabled(x=False)
+
         self.lsl=lsl
         self.channel = channel
         self.fs = self.lsl.get_nominal_srate()
@@ -69,22 +56,16 @@ class SpectrumAnalyzer(pg.PlotWidget):
 
 
     def initUI(self):
-        #self.lay = QVBoxLayout()
-        #self.setLayout(self.lay)
-        #self.specWid = pg.PlotWidget(name="spectrum")
         self.setTitle("Frequency Graph")
-        self.getPlotItem().setMouseEnabled(y=False)
-        #self.specItem.setYRange(-60, 20)
+        #self.getPlotItem().setYRange(-60, 20)
         #self.specItem.setYRange(0,1)
-        self.getPlotItem().setXRange(0, int(self.fs/2), padding=0)
+        self.getPlotItem().setXRange(0, int(self.fs/2))
 
         self.specAxis = self.getPlotItem().getAxis("bottom")
         self.specAxis.setLabel("Frequency [Hz]")
-        #self.lay.addWidget(self.specWid)
 
         self.createTimer()
 
-        #self.show()
 
     #Kills thread 
     def kill_thread(self):
@@ -125,14 +106,29 @@ class SpectrumAnalyzer(pg.PlotWidget):
     
     def get_periodograms(self, data):
         if(len(data) >= 3*self.fs):
+            print("starting periodogram")
             f, Pxx = signal.periodogram(x=data, fs=self.fs, detrend='linear')
+            print("returned f and Pxx")
+            Pxx = 10*np.log10(Pxx)
+            print("returning...")
             return f, Pxx
+
+        return (None, None)
 
     def get_psd(self,data):
         if(len(data) >= 3*self.fs):
             win = 3 * self.fs
-            Pxx, f = pyplot.psd(x=data, fs=self.fs, window=win, NFFT=win, detrend='linear', noverlap=win/2, scale_by_freq=True)
+            T = 1 / self.fs # time-step of sampling frequencies
+            N = data.shape[0]
 
+            Pxx = (np.abs(np.fft.fft(data))**2) / np.square(N)
+            Pxx = 10*np.log10(Pxx)
+
+            f = np.fft.fftfreq(data.size, T) # computes frequencies associated with FFT components
+            idx = np.argsort(f) # returns a sorted array along the -1 axis
+            return f[idx][int(len(f)/2):], Pxx[idx][int(len(Pxx)/2):]
+
+        return (None, None)
 
     # Resumes the signal viewer in real-time
     def start(self):
@@ -157,7 +153,7 @@ class SpectrumAnalyzer(pg.PlotWidget):
             data = self.readData()
         except IOError:
             pass
-
+        # pdb.set_trace()
         f, Pxx = self.get_welchs(data)
 
         if f is not None and Pxx is not None:
