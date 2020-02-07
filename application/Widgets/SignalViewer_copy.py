@@ -3,6 +3,7 @@ import pyqtgraph as pg
 import os
 import pylsl
 from scipy import signal, stats
+from PyQt5.QtWidgets import*
 
 
 # import sys
@@ -12,19 +13,29 @@ paired_colors = ['#dbae57', '#57db6c', '#dbd657', '#57db94', '#b9db57', '#57dbbb
                  '#57acdb']
 images_path = os.path.realpath(os.path.dirname(os.path.realpath(__file__)) + '/../static/imag') + '/'
 
-pg.setConfigOptions(antialias=True)
 
-class SignalViewer(pg.PlotWidget):
-    def __init__(self, fs, names, view_channels, seconds_to_plot, overlap, signals_to_plot=None, notch_filter=False,
+class SignalViewer(QWidget):
+    def __init__(self, fs, names, view_channels, seconds_to_plot, overlap, signals_to_plot=None,
                  **kwargs):
         super(SignalViewer, self).__init__(**kwargs)
         # gui settings
 
-        self.setTitle("Time-Series Graph")
-        self.getPlotItem().setMouseEnabled(x=False)
-        self.getPlotItem().showGrid(y=True)
-        self.getPlotItem().setRange(xRange=(0, seconds_to_plot))
-        self.setBackgroundBrush(pg.mkBrush('#252120'))
+        self.vb = CustomViewBox()
+        self.lay = QVBoxLayout()
+        self.specWid = pg.PlotWidget(name="Time-Series Graph")
+        #self.setTitle("Time-Series Graph")
+        self.specWid.plotItem.setMouseEnabled(x=False)
+        self.specWid.plotItem.showGrid(y=True)
+        #self.getPlotItem().enableAutoRange(axis='y')
+        #self.getPlotItem().setMenuEnabled(enableMenu=False)
+        #self.getPlotItem().setMouseEnabled(x=False)
+        #self.getPlotItem().autoBtn.disable()
+        #self.getPlotItem().autoBtn.setScale(0)
+        self.specWid.plotItem.setRange(xRange=(0, seconds_to_plot))
+        self.specWid.setBackgroundBrush(pg.mkBrush('#252120'))
+        self.lay.addWidget(self.specWid)
+        self.createTimer()
+        self.show()
 
         # init buffers
         self.names = []
@@ -46,21 +57,26 @@ class SignalViewer(pg.PlotWidget):
 
         # set names
         if overlap:
-            self.getPlotItem().addLegend(offset=(-30, 30))
+            self.specWid.getPlotItem().addLegend(offset=(-30, 30))
 
         # init signal curves
         self.curves = []
         for i in range(self.n_signals_to_plot):
             curve = pg.PlotDataItem(pen=paired_colors[i % len(paired_colors)], name=names[i])
-            self.addItem(curve)
+            self.specWid.addItem(curve)
             if not overlap:
                 curve.setPos(0, i + 1)
             self.curves.append(curve)
 
         # add vertical running line
         self.vertical_line = pg.InfiniteLine(pos=0, angle=90, pen=pg.mkPen(color='B48375', width=1))
-        self.addItem(self.vertical_line)
+        self.specWid.addItem(self.vertical_line)
 
+
+    def createTimer(self):
+        self.main_timer = QTimer()
+        self.main_timer.timeout.connect(self.main_loop)
+        self.main_timer.start(30)
 
 
     def update(self, chunk, setX=None, setPos=None):
@@ -112,8 +128,8 @@ class RawSignalViewer(SignalViewer):
         super(RawSignalViewer, self).__init__(fs, names, view_channels, seconds_to_plot=seconds_to_plot, overlap=False,
                                               signals_to_plot=5, **kwargs)
         # gui settings
-        self.getPlotItem().setRange(yRange=(0, self.n_signals_to_plot + 1))
-        #self.getPlotItem().disableAutoRange()
+        self.specWid.getPlotItem().setYRange(0, self.n_signals_to_plot + 1)
+        self.specWid.getPlotItem().disableAutoRange()
         #self.getPlotItem().enableAutoRange(axis='y')
 
         self.names = []
@@ -140,7 +156,7 @@ class RawSignalViewer(SignalViewer):
 
     def reset_labels(self):
         ticks = [[(val, tick) for val, tick in zip(range(1, self.n_signals_to_plot + 1), self.names[self.c_slice])]]
-        self.getPlotItem().getAxis('left').setTicks(ticks)
+        self.specWid.getPlotItem().getAxis('left').setTicks(ticks)
 
     #Overrides prepare_y_data from SignalViewer
     #This function scales the EEG signal to fit the size of the window
@@ -165,3 +181,22 @@ class DerivedSignalViewer(SignalViewer):
 
     def __init__(self, fs, names, seconds_to_plot=5, **kwargs):
         super(DerivedSignalViewer, self).__init__(fs, names, seconds_to_plot, overlap=True, **kwargs)
+
+
+
+# Override the pg.ViewBox class to add custom
+# implementations to the wheelEvent
+class CustomViewBox(pg.ViewBox):
+    def __init__(self, *args, **kwds):
+        pg.ViewBox.__init__(self, *args, **kwds)
+        #self.setMouseMode(self.RectMode)
+
+    def wheelEvent(self, ev, axis=None):
+        # 1. Determine initial x-range
+        initialRange = self.viewRange()
+
+        # 2. Call the superclass method for zooming in
+        pg.ViewBox.wheelEvent(self,ev,axis)
+
+        # 3. Reset the x-axis to its original limits
+        self.setXRange(initialRange[0][0],initialRange[0][1])

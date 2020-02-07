@@ -8,7 +8,7 @@ import pyqtgraph as pg
 #Self created modules
 from application.Widgets.Logo import UTKLogo
 from application.Widgets.Error import ErrorBox
-from application.Widgets.FrequencyViewer import SpectrumAnalyzer
+from application.Widgets.FrequencyViewer_copy import SpectrumAnalyzer
 from application.Widgets.TimeSeriesViewer import TimeSeriesSignal
 from application.Widgets.QueryData import StreamData
 from application.Buffers.lslringbuffer_multithreaded import LSLRINGBUFFER
