@@ -4,31 +4,15 @@ from threading import Thread
 import time
 import pdb
 from scipy import signal
+import spectrum
 
 import pyqtgraph as pg
+from matplotlib import pyplot
 
 import numpy as np
 from PyQt5.QtWidgets import*
 from PyQt5.QtCore import*
 from PyQt5.QtGui import*
-
-# Audio Format (check Audio MIDI Setup if on Mac)
-# FORMAT = pyaudio.paInt16
-RATE = 250
-CHANNELS = 32
-
-# Set Plot Range [-RANGE,RANGE], default is nyquist/2
-RANGE = None
-if not RANGE:
-    RANGE = RATE / 2
-
-# Set these parameters (How much data to plot per FFT)
-INPUT_BLOCK_TIME = 0.05
-INPUT_FRAMES_PER_BLOCK = int(RATE * INPUT_BLOCK_TIME)
-
-# Which Channel? (L or R)
-LR = "l"
-
 
 class SpectrumAnalyzer(QWidget):
     def __init__(self, lsl, channel):
@@ -85,7 +69,7 @@ class SpectrumAnalyzer(QWidget):
 
         self.show()
 
-    #Kills thread safely
+    #Kills thread 
     def kill_thread(self):
         print("Killing thread....")
         self.stop_threads=True
@@ -111,15 +95,27 @@ class SpectrumAnalyzer(QWidget):
 
 
     # Computing power spectral density using Welch's method
-    def get_spectral_density(self,data):
+    def get_welchs(self,data):
         if(len(data) >= 3*self.fs):
             win = 3 * self.fs
-            freqs, psd = signal.welch(data, self.fs, nperseg=win, window='hanning', noverlap=win/2, scaling='density')
+            freqs, psd = signal.welch(data, self.fs, nperseg=win, nfft=win, window='hanning', noverlap=win/2, scaling='density')
             psd = 10*np.log10(psd)
-            # print(psd)
             return freqs, psd
 
         return (None, None)
+
+    
+    def get_periodograms(self, data):
+        if(len(data) >= 3*self.fs):
+            f, Pxx = signal.periodogram(x=data, fs=self.fs, detrend='linear')
+            return f, Pxx
+
+    def get_psd(self,data):
+        if(len(data) >= 3*self.fs):
+            win = 3 * self.fs
+            Pxx, f = pyplot.psd(x=data, fs=self.fs, window=win, NFFT=win, detrend='linear', noverlap=win/2, scale_by_freq=True)
+            Pxx = 10*np.log10(Pxx)
+            return f, Pxx
 
 
     # Resumes the signal viewer in real-time
@@ -146,7 +142,7 @@ class SpectrumAnalyzer(QWidget):
         except IOError:
             pass
 
-        f, Pxx = self.get_spectrum(data)
+        f, Pxx = self.get_psd(data)
 
         if f is not None and Pxx is not None:
             self.specItem.plot(x=f, y=Pxx, clear=True)

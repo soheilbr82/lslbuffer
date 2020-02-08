@@ -52,7 +52,8 @@ class LSLgui(QMainWindow):
         # Clear the channelLayout of all previously listed channels, since no streams are available
         if len(streams) == 0:
             print("No streams available.")
-            self.clearChannels()
+            self.clearLayout(self.channelLayout)
+            self.channelLayout.addWidget(QLabel("No available channels to view at this time."))
 
         else:
             self.isAvailable = True

@@ -95,10 +95,11 @@ class SpectrumAnalyzer(pg.PlotWidget):
     # Computing power spectral density using Welch's method
     def get_welchs(self,data):
         if(len(data) >= 3*self.fs):
+            print("Length of data is: " + str(len(data)))
+
             win = 3 * self.fs
             freqs, psd = signal.welch(data, self.fs, nperseg=win, nfft=win, window='hanning', noverlap=win/2, scaling='density')
             psd = 10*np.log10(psd)
-            # print(psd)
             return freqs, psd
 
         return (None, None)
@@ -157,6 +158,8 @@ class SpectrumAnalyzer(pg.PlotWidget):
         f, Pxx = self.get_welchs(data)
 
         if f is not None and Pxx is not None:
+            #print("Length of f is: " + str(len(f)))
+            #print("Length of Pxx is: " + str(len(Pxx)))
             self.getPlotItem().plot(x=f, y=Pxx, clear=True)
 
 
