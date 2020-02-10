@@ -13,8 +13,8 @@ FS = 250 #Hz
 CHUNKSZ = 1024 #samples
 
 
-class MicrophoneRecorder():
-    def __init__(self, signal):
+class LSLRecorder():
+    def __init__(self, signal, stream):
         self.signal = signal
         streams = pylsl.resolve_streams(wait_time=1.0)
         lsl_inlet = pylsl.StreamInlet(streams[0], max_buflen=4)
@@ -131,15 +131,15 @@ if __name__ == '__main__':
     w = SpectrogramWidget()
     w.read_collected.connect(w.update)
 
-    mic = MicrophoneRecorder(w.read_collected)
+    eeg = LSLRecorder(w.read_collected)
 
     # time (seconds) between reads
 
     #interval = FS/CHUNKSZ
     t = QtCore.QTimer()
-    t.timeout.connect(mic.read)
+    t.timeout.connect(eeg.read)
     t.start() #QTimer takes ms
 
 
     app.exec_()
-    mic.close()
+    eeg.close()

@@ -39,6 +39,25 @@ class SpectrogramWidget(pg.PlotWidget):
         self.main_timer.start(30)
 
 
+    #Kills thread 
+    def kill_thread(self):
+        print("Killing thread....")
+        self.stop_threads=True
+        self.t1.join() 
+        print('Thread killed.') 
+
+    #Kills any active threads and open windows
+    def close_window(self):
+        self.kill_thread()
+        self.main_timer.stop()
+        self.close()
+        
+
+    def resetChannel(self, channel):
+        if channel != self.channel:
+            self.channel = channel
+
+
     def readData(self):
         sample = self.eeg_sig.get()
         shorts = sample[:, self.channel]
@@ -54,7 +73,7 @@ class SpectrogramWidget(pg.PlotWidget):
             return freqs, psd
 
         return (None, None)
-
+    
 
     def update(self):
         # normalized, windowed frequencies in data chunk
