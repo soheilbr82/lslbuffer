@@ -8,7 +8,7 @@ import pyqtgraph as pg
 #Self created modules
 from application.Widgets.Logo import UTKLogo
 from application.Widgets.Error import ErrorBox
-from application.Widgets.FrequencyViewer_copy import SpectrumAnalyzer
+from application.Widgets.FrequencyViewer import SpectrumAnalyzer
 from application.Widgets.TimeSeriesViewer import TimeSeriesSignal
 from application.Widgets.TimeFrequency import SpectrogramWidget
 from application.Widgets.QueryData import StreamData
@@ -309,7 +309,7 @@ class LSLgui(QMainWindow):
             if len(self.bands["High"].text()) == 0:
                 self.highPass = (self.lslobj[self.currentStreamName].get_nominal_srate() / 2) - .001
             else:
-                if float(self.bands["High"].text()) < self.lslobj[self.currentStreamName].get_nominal_srate() / 2:
+                if float(self.bands["High"].text()) < (self.lslobj[self.currentStreamName].get_nominal_srate() / 2):
                     self.highPass = float(self.bands["High"].text())
 
             self.graph.changeFilter("Butter", (self.lowPass, self.highPass))
@@ -566,7 +566,6 @@ class LSLgui(QMainWindow):
 
         self.queryBtn.clicked.connect(self.loadQuery)
         self.visualBtn.clicked.connect(self.checkVisual)
-        #self.freqBtn.clicked.connect(self.showTFStream)
 
         self.showMaximized()
 
