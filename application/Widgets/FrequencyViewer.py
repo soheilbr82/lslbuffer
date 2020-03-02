@@ -4,7 +4,6 @@ from threading import Thread
 import time
 import pdb
 from scipy import signal
-import spectrum
 
 import pyqtgraph as pg
 from matplotlib import pyplot
