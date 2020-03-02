@@ -16,7 +16,7 @@ pg.setConfigOptions(antialias=True)
 class EpochViewer(pg.GraphicsWindow):
     def __init__(self, lsl=None, channels=1):
         super(EpochViewer,self).__init__()
-        self.resize(1000,600)
+        self.resize(1200,1000)
         self.setWindowTitle('Epoch Viewer')
 
         self.plots = []
@@ -30,11 +30,13 @@ class EpochViewer(pg.GraphicsWindow):
         self.channels = channels
         self.x = np.linspace(-0.2, 0.8,128)
 
-        self.alphas = np.array([0.8,1, 0.2, 0.4, 0.6])
+        self.epochOneAlphas = np.array([0.8,1, 0.2, 0.4, 0.6])
+        self.epochTwoAlphas = np.array([0.8,1, 0.2, 0.4, 0.6])
         self.linesPlotted = False
         self.epochOne=[[0 for i in range(5)] for c in range(self.channels)]
         self.epochTwo=[[0 for i in range(5)] for c in range(self.channels)]
-        self.lineIndex = 0
+        self.epochOneIndex = 0
+        self.epochTwoIndex = 0
 
         self.initUI()
 
@@ -59,45 +61,69 @@ class EpochViewer(pg.GraphicsWindow):
 
     def main_loop(self):
         try:
-            chunk, timestamp = self.inlet_epoch.pull_chunk()
+            chunk, timestamp = self.inlet_epoch.pull_chunk(timeout=0.01)
 
         except IOError:
             pass
 
         if len(chunk) > 0:
-            if self.epochOne[0].count(0) == 0 and self.epochTwo[0].count(0) == 0:
+            chunk = np.asarray(chunk)
+            lineChange = []
+
+            if self.epochOne[0].count(0) == 0:
                 for c in range(self.channels):
-                    lineOne = self.epochOne[c][self.lineIndex]
-                    lineTwo = self.epochTwo[c][self.lineIndex]
-                    self.plots[c].removeItem(lineOne)
-                    self.plots[c].removeItem(lineTwo)
+                    if chunk[-1][0] == 1:
+                        lineOne = self.epochOne[c][self.epochOneIndex]
+                        self.plots[c].removeItem(lineOne)
+
+            if self.epochTwo[0].count(0) == 0:
+                for c in range(self.channels):
+                    if chunk[-1][0] == -1:
+                        lineTwo = self.epochTwo[c][self.epochTwoIndex]
+                        self.plots[c].removeItem(lineTwo)
 
             
             for c in range(self.channels):
-                self.epochOne[c][self.lineIndex] = self.plots[c].plot(x=self.x, y=chunk[0], clear=False, pen=(0,0,255), name="Blue curve")
-                self.epochTwo[c][self.lineIndex] = self.plots[c].plot(x=self.x, y=chunk[1], clear=False, pen=(255,0,0), name="Red curve")
+                if chunk[-1][0] == 1:
+                    self.epochOne[c][self.epochOneIndex] = self.plots[c].plot(x=self.x, y=chunk[c,:], clear=False, pen=(0,0,255), name="Blue curve")
+                elif chunk[-1][0] == -1:    
+                    self.epochTwo[c][self.epochTwoIndex] = self.plots[c].plot(x=self.x, y=chunk[c,:], clear=False, pen=(255,0,0), name="Red curve")
 
-
-            lineChange = [x for x in range((5-self.epochOne[0].count(0)))]
+            if chunk[-1][0] == 1:
+                lineChange = [x for x in range((5-self.epochOne[0].count(0)))]
+            elif chunk[-1][0] == -1:
+                lineChange = [x for x in range((5-self.epochTwo[0].count(0)))]
             
             if self.linesPlotted:
                 for i in range(len(lineChange)):
                     for c in range(self.channels):
-                        lineOne = self.epochOne[c][lineChange[i]]
-                        lineTwo = self.epochTwo[c][lineChange[i]]
+                        if chunk[-1][0] == 1:
+                            lineOne = self.epochOne[c][lineChange[i]]
+                            lineOne.setAlpha(self.epochOneAlphas[i], False)
+                           
 
-                        lineOne.setAlpha(self.alphas[i], False)
-                        lineTwo.setAlpha(self.alphas[i], False)
+                        elif chunk[-1][0] == -1:
+                            lineTwo = self.epochTwo[c][lineChange[i]]
+                            lineTwo.setAlpha(self.epochTwoAlphas[i], False)
 
-                self.alphas = np.roll(self.alphas, 1)
+                if chunk[-1][0] == 1:
+                    self.epochOneAlphaslphas = np.roll(self.epochOneAlphas, 1)
+                elif chunk[-1][0] == -1:
+                    self.epochTwoAlphaslphas = np.roll(self.epochTwoAlphas, 1)
 
             else:
                 self.linesPlotted = True
 
-            if self.lineIndex < 4:
-                self.lineIndex += 1
-            else:
-                self.lineIndex = 0
+            if chunk[-1][0] == 1:
+                if self.epochOneIndex < 4:
+                    self.epochOneIndex += 1
+                else:
+                    self.epochOneIndex = 0
+            elif chunk[-1][0] == -1:
+                if self.epochTwoIndex < 4:
+                    self.epochTwoIndex += 1
+                else:
+                    self.epochTwoIndex = 0
 
 
 ## Start Qt event loop unless running in interactive mode or using pyside.
