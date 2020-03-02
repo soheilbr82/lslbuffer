@@ -1,11 +1,10 @@
 from pyqtgraph.Qt import QtGui, QtCore
-import numpy as np
-import pyqtgraph as pg
-from pylsl import StreamInfo, StreamInlet, resolve_byprop
-import time
 from PyQt5.QtWidgets import*
 from PyQt5.QtCore import*
 from PyQt5.QtGui import*
+import numpy as np
+import pyqtgraph as pg
+from pylsl import StreamInfo, StreamInlet, resolve_byprop
 import pdb
 
 app = QtGui.QApplication([])
@@ -14,12 +13,11 @@ app = QtGui.QApplication([])
 pg.setConfigOptions(antialias=True)
 
 
-
 class EpochViewer(pg.GraphicsWindow):
-    def __init__(self, lsl=None, channels=2):
+    def __init__(self, lsl=None, channels=1):
         super(EpochViewer,self).__init__()
         self.resize(1000,600)
-        self.setWindowTitle('pyqtgraph example: Plotting')
+        self.setWindowTitle('Epoch Viewer')
 
         self.plots = []
 
@@ -50,10 +48,10 @@ class EpochViewer(pg.GraphicsWindow):
 
     def initUI(self):
         for i in range(self.channels):
-            p = self.addPlot()
+            p = self.addPlot(title="Channel %s" % str(i+1))
             self.plots.append(p)
 
-            if i != self.channels-1:
+            if i % 2:
                 self.nextRow()
 
         self.createTimer()
@@ -106,7 +104,13 @@ class EpochViewer(pg.GraphicsWindow):
 if __name__ == '__main__':
     import sys
     if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
-        o = EpochViewer()
+        if len(sys.argv) > 1:
+            o = EpochViewer(channels=int(sys.argv[1]))
+        else:
+            o = EpochViewer()
+        sa = pg.QtGui.QScrollArea() 
+        sa.setWidget(o)
         o.show()
+        sa.show()
         QtGui.QApplication.instance().exec_()
         sys.exit(1)
