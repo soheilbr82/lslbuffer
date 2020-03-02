@@ -56,7 +56,7 @@ class SpectrumAnalyzer(pg.PlotWidget):
 
     def initUI(self):
         self.setTitle("Frequency Graph")
-        #self.getPlotItem().setYRange(-60, 20)
+        self.getPlotItem().setYRange(-60, 20)
         #self.specItem.setYRange(0,1)
         self.getPlotItem().setXRange(0, int(self.fs/2))
 
