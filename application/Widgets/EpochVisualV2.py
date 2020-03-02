@@ -59,7 +59,7 @@ class EpochViewer(pg.GraphicsWindow):
 
     def main_loop(self):
         try:
-            chunk, timestamp = self.inlet_epoch.pull_chunk()
+            chunk, timestamp = self.inlet_epoch.pull_chunk(timeout=0.01)
 
         except IOError:
             pass
@@ -74,8 +74,8 @@ class EpochViewer(pg.GraphicsWindow):
 
             
             for c in range(self.channels):
-                self.epochOne[c][self.lineIndex] = self.plots[c].plot(x=self.x, y=chunk[0], clear=False, pen=(0,0,255), name="Blue curve")
-                self.epochTwo[c][self.lineIndex] = self.plots[c].plot(x=self.x, y=chunk[1], clear=False, pen=(255,0,0), name="Red curve")
+                self.epochOne[c][self.lineIndex] = self.plots[c].plot(x=self.x, y=chunk[c, :], clear=False, pen=(0,0,255), name="Blue curve")
+                self.epochTwo[c][self.lineIndex] = self.plots[c].plot(x=self.x, y=chunk[c, :], clear=False, pen=(255,0,0), name="Red curve")
 
 
             lineChange = [x for x in range((5-self.epochOne[0].count(0)))]
