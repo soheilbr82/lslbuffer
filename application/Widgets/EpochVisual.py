@@ -1,3 +1,4 @@
+import pdb
 import numpy as np
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
@@ -6,6 +7,7 @@ import matplotlib.animation as animation
 import pylsl
 from lslringbuffer_multithreaded import LSLRINGBUFFER
 import sys
+
 
 
 channels = int(sys.argv[1])
@@ -23,6 +25,7 @@ for s in streams:
             num_channels=lsl_inlet.info().channel_count(), uid=lsl_inlet.info().uid(),\
             hostname=lsl_inlet.info().hostname(), channel_format='float64')
 
+sampling_rate = int(lsl.get_nominal_srate())
 chunk = None
 buffer = np.empty([0,channels])
 tmp_buffer = np.empty([0,channels])
@@ -40,19 +43,20 @@ alphas = [0.2, 0.4, 0.6, 0.8, 1.0]
 
 # This function is called periodically from FuncAnimation
 def animate(i):
-    global buffer, tmp_buffer, chunk, lsl, lines, line, colors, alphas, fs, channels, maxView, axs
+    global buffer, tmp_buffer, chunk, lsl, lines, line, colors, alphas, fs, channels, maxView, axs, sampling_rate
 
 
-    while buffer.shape[0] < 128:
+    while buffer.shape[0] < sampling_rate:
         while chunk is None:
             chunk, timestamp = lsl.get_next_chunk()
+            pdb.set_trace()
 
         buffer = np.concatenate((buffer, chunk), axis=0)
 
     
-    if buffer.shape[0] > 128:
-        tmp_buffer  = np.concatenate((tmp_buffer, buffer[128:]), axis=0)
-        buffer = np.delete(buffer, np.s_[128:], axis=0)
+    if buffer.shape[0] > sampling_rate:
+        tmp_buffer  = np.concatenate((tmp_buffer, buffer[sampling_rate:]), axis=0)
+        buffer = np.delete(buffer, np.s_[sampling_rate:], axis=0)
         
 
 

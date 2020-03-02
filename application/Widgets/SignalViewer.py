@@ -3,6 +3,8 @@ import pyqtgraph as pg
 import os
 import pylsl
 from scipy import signal, stats
+from pyqtgraph.Qt import QtGui, QtCore
+
 
 
 paired_colors = ['#dbae57', '#57db6c', '#dbd657', '#57db94', '#b9db57', '#57dbbb', '#91db57', '#57d3db', '#69db57',
@@ -84,8 +86,8 @@ class SignalViewer(pg.PlotWidget):
                                                        np.array(self.indices)]
 
         # pre-process y data and update it
-        # y_data = self.prepare_y_data(chunk_len)
-        y_data = self.y_raw_buffer 
+        y_data = self.prepare_y_data(chunk_len)
+        #y_data = self.y_raw_buffer 
         before_mask = (self.x_stamps < self.current_pos)
         for i, curve in enumerate(self.curves):
             y = y_data[:, i] if i < y_data.shape[1] else self.x_mesh * np.nan

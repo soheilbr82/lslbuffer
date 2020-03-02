@@ -72,6 +72,7 @@ class TimeSeriesSignal(RawSignalViewer):
     #Changes the low/high band pass for the butter filter
     def changeFilter(self, Filter, band):
         if Filter == "Butter" and self.butter_graph is not None:
+            print(band)
             self.butter_filter.reset(band)
 
 

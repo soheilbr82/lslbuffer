@@ -3,6 +3,7 @@ from sys import platform
 from subprocess import Popen, PIPE, STDOUT, run
 
 from PyQt5.QtWidgets import QApplication
+QApplication.setStyle('Fusion')
 
 if __name__ == '__main__':
     if platform == "linux" or platform == "linux2":
@@ -36,8 +37,8 @@ if __name__ == '__main__':
     elif platform == "win32":
         p = Popen(['ipython', '--pylab=qt'], stdout=PIPE,  stdin=PIPE, stderr=STDOUT)
         grep_stdout = p.communicate(input=b'from application.LSL_visualization import LSLgui\nimport sys\n'
-                                          b'from PyQt5.QtWidgets import QApplication\napp = QApplication(sys.argv)\n'
-                                          b'gui=LSLgui()\napp.aboutToQuit.connect(gui.mainWindowExitHandler)\n'
-                                          b'sys.exit(app.exec_())\n')[0]
+                                          b'from PyQt5.QtWidgets import QApplication\nQApplication.setStyle("Fusion")\napp = QApplication(sys.argv)\n'
+                                          b'gui=LSLgui()\napp.aboutToQuit.connect(gui.mainWindowExitHandler)\n')[0]
+                                          #b'sys.exit(app.exec_())\n')[0]
         #grep_stdout = p.communicate(input=b'from application.LSL_visualization import LSLgui\nimport LSLgui\napp = LSLgui('
         #                                  b')\napp.start()\n')[0]
