@@ -18,6 +18,8 @@ class EpochViewer(pg.GraphicsWindow):
         super(EpochViewer,self).__init__()
         self.resize(1200,1000)
         self.setWindowTitle('Epoch Viewer')
+        self.monitor = QDesktopWidget().screenGeometry(0)
+        self.move(self.monitor.left(), self.monitor.top())
 
         self.plots = []
 
