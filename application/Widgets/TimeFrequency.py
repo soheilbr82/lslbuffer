@@ -41,10 +41,8 @@ class SpectrogramWidget(pg.PlotWidget):
 
     #Kills thread 
     def kill_thread(self):
-        print("Killing thread....")
         self.stop_threads=True
         self.t1.join() 
-        print('Thread killed.') 
 
     #Kills any active threads and open windows
     def close_window(self):
@@ -73,13 +71,26 @@ class SpectrogramWidget(pg.PlotWidget):
             return freqs, psd
 
         return (None, None)
+
+
+    def start(self):
+        if self.main_timer.isActive():
+            pass
+        else:
+            self.main_timer.start()
+
+    # Pauses the signal viewer
+    def stop(self):
+        if self.main_timer.isActive():
+            self.main_timer.stop()
+        else:
+            pass
     
 
     def update(self):
         # normalized, windowed frequencies in data chunk
         try:
             data = self.readData()
-            print("Length of data is: " + str(len(data)))
         except IOError:
             pass
 

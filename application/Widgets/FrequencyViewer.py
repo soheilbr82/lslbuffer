@@ -25,8 +25,6 @@ class SpectrumAnalyzer(pg.PlotWidget):
         self.channel = channel
         self.fs = self.lsl.get_nominal_srate()
 
-        # self.BUFFERSIZE=2**12 #1024 is a good buffer size
-
         self.stop_threads = False
         self.eeg_sig = Queue()
         self.t1 = Thread(target=self.lsl.run, args=(lambda: self.stop_threads,self.eeg_sig))
@@ -57,7 +55,6 @@ class SpectrumAnalyzer(pg.PlotWidget):
     def initUI(self):
         self.setTitle("Frequency Graph")
         self.getPlotItem().setYRange(-60, 20)
-        #self.specItem.setYRange(0,1)
         self.getPlotItem().setXRange(0, int(self.fs/2))
 
         self.specAxis = self.getPlotItem().getAxis("bottom")
@@ -68,16 +65,14 @@ class SpectrumAnalyzer(pg.PlotWidget):
 
     #Kills thread 
     def kill_thread(self):
-        print("Killing thread....")
         self.stop_threads=True
         self.t1.join() 
-        print('Thread killed.') 
 
     #Kills any active threads and open windows
     def close_window(self):
         self.kill_thread()
         self.main_timer.stop()
-        #self.close()
+        self.close()
 
     def get_spectrum(self, data):
         T = 1.0 / self.fs
@@ -94,8 +89,6 @@ class SpectrumAnalyzer(pg.PlotWidget):
     # Computing power spectral density using Welch's method
     def get_welchs(self,data):
         if(len(data) >= 3*self.fs):
-            print("Length of data is: " + str(len(data)))
-
             win = 3 * self.fs
             freqs, psd = signal.welch(data, self.fs, nperseg=win, nfft=win, window='hanning', noverlap=win/2, scaling='density')
             psd = 10*np.log10(psd)
@@ -106,11 +99,8 @@ class SpectrumAnalyzer(pg.PlotWidget):
     
     def get_periodograms(self, data):
         if(len(data) >= 3*self.fs):
-            print("starting periodogram")
             f, Pxx = signal.periodogram(x=data, fs=self.fs, detrend='linear')
-            print("returned f and Pxx")
             Pxx = 10*np.log10(Pxx)
-            print("returning...")
             return f, Pxx
 
         return (None, None)
@@ -133,32 +123,25 @@ class SpectrumAnalyzer(pg.PlotWidget):
     # Resumes the signal viewer in real-time
     def start(self):
         if self.main_timer.isActive():
-            print("timer is active")
-            print("timer ID: %s" % str(self.main_timer.timerId()))
+            pass
         else:
-            print("timer is inactive")
             self.main_timer.start()
 
     # Pauses the signal viewer
     def stop(self):
         if self.main_timer.isActive():
-            print("timer is active")
-            print("timer ID: %s" % str(self.main_timer.timerId()))
             self.main_timer.stop()
         else:
-            print("timer is inactive")
+            pass
 
     def main_loop(self):
         try:
             data = self.readData()
         except IOError:
             pass
-        # pdb.set_trace()
         f, Pxx = self.get_welchs(data)
 
         if f is not None and Pxx is not None:
-            #print("Length of f is: " + str(len(f)))
-            #print("Length of Pxx is: " + str(len(Pxx)))
             self.getPlotItem().plot(x=f, y=Pxx, clear=True)
 
 
