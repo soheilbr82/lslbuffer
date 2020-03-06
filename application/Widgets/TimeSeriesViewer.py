@@ -72,7 +72,6 @@ class TimeSeriesSignal(RawSignalViewer):
     #Changes the low/high band pass for the butter filter
     def changeFilter(self, Filter, band):
         if Filter == "Butter" and self.butter_graph is not None:
-            print(band)
             self.butter_filter.reset(band)
 
 
@@ -93,20 +92,16 @@ class TimeSeriesSignal(RawSignalViewer):
     #Starts
     def start(self):
         if self.main_timer.isActive():
-            print("timer is active")
-            print("timer ID: %s" % str(self.main_timer.timerId()))
+            pass
         else:
-            print("timer is inactive")
             self.main_timer.start()
 
     # Pauses the signal viewer
     def stop(self):
         if self.main_timer.isActive():
-            print("timer is active")
-            print("timer ID: %s" % str(self.main_timer.timerId()))
             self.main_timer.stop()
         else:
-            print("timer is inactive")
+            pass
 
 
     def updateMetaData(self):

@@ -36,9 +36,10 @@ class SignalViewer(pg.PlotWidget):
                 self.names.append(n)
 
         self.n_signals = len(self.names)
-        self.n_signals_to_plot = self.n_signals  # min(self.n_signals, signals_to_plot or self.n_signals)
+        self.n_signals_to_plot = self.n_signals  
         self.n_samples = int(fs * seconds_to_plot)  # samples to show
         self.x_stamps = np.arange(self.n_samples)
+
         # Received samples counter
         self.previous_pos = 0
         self.pos = 0
