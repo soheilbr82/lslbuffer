@@ -65,7 +65,7 @@ class EpochViewer(pg.GraphicsWindow):
 
     def initUI(self):
         for i in range(len(self.channels)):
-            p = self.addPlot(title="Channel %s" % str(i + 1))
+            p = self.addPlot(title="Channel %s" % self.channels[i])
             self.plots.append(p)
             # p.setYRange(-5, 5)
             # p.addLegend()
