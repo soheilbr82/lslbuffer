@@ -31,7 +31,14 @@ class EpochViewer(pg.GraphicsWindow):
         if StreamInfo.type(streams[0]) == 'EPOCH':
             self.inlet_epoch = StreamInlet(streams[0])
 
-        self.channels = channels
+        self.info = self.inlet_epoch.info()
+        self.channels = []
+
+        ch = self.info.desc().child("channels").child("channel")
+        for k in range(self.info.channel_count()):
+            self.channels.append(ch.child_value("label"))
+            ch = ch.next_sibling()
+
         self.x = np.linspace(-0.2, 0.8, self.fs_new)
         self.legend = None
         self.target = True
@@ -44,8 +51,8 @@ class EpochViewer(pg.GraphicsWindow):
         self.epochTwoWidth = np.array([3, 5, 0.2, 0.5, 1])
 
         self.linesPlotted = False
-        self.epochOne = [[0 for i in range(5)] for c in range(self.channels)]
-        self.epochTwo = [[0 for i in range(5)] for c in range(self.channels)]
+        self.epochOne = [[0 for i in range(5)] for c in range(len(self.channels))]
+        self.epochTwo = [[0 for i in range(5)] for c in range(len(self.channels))]
         self.epochOneIndex = 0
         self.epochTwoIndex = 0
 
@@ -57,7 +64,7 @@ class EpochViewer(pg.GraphicsWindow):
         self.main_timer.start(30)
 
     def initUI(self):
-        for i in range(self.channels):
+        for i in range(len(self.channels)):
             p = self.addPlot(title="Channel %s" % str(i + 1))
             self.plots.append(p)
             # p.setYRange(-5, 5)
@@ -88,18 +95,18 @@ class EpochViewer(pg.GraphicsWindow):
             lineChange = []
 
             if self.epochOne[0].count(0) == 0:
-                for c in range(self.channels):
+                for c in range(len(self.channels)):
                     if chunk[-1][0] == 1:
                         lineOne = self.epochOne[c][self.epochOneIndex]
                         self.plots[c].removeItem(lineOne)
 
             if self.epochTwo[0].count(0) == 0:
-                for c in range(self.channels):
+                for c in range(len(self.channels)):
                     if chunk[-1][0] == -1:
                         lineTwo = self.epochTwo[c][self.epochTwoIndex]
                         self.plots[c].removeItem(lineTwo)
 
-            for c in range(self.channels):
+            for c in range(len(self.channels)):
                 if chunk[-1][0] == 1:
                     p = self.plots[c].plot(x=self.x, y=chunk[c, :], clear=False,
                                                                               pen=pg.functions.mkPen([255, 0, 0],width=5), name="Target")
@@ -126,7 +133,7 @@ class EpochViewer(pg.GraphicsWindow):
 
             if self.linesPlotted:
                 for i in range(len(lineChange)):
-                    for c in range(self.channels):
+                    for c in range(len(self.channels)):
                         if chunk[-1][0] == 1:
                             lineOne = self.epochOne[c][lineChange[i]]
                             lineOne.setAlpha(self.epochOneAlphas[i], False)
